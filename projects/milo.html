@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MILO - Projects - Samson Galvin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="../assets/css/style.css">
+<style>
+    .project-hero {background-color:#111827; border-radius:14px; padding:30px; box-shadow:0 4px 12px rgba(0,0,0,0.3);}
+    .project-hero img {width:100%; max-width:520px; height:auto; display:block; margin:16px auto 0 auto; border-radius:10px; object-fit:cover;}
+    .project-meta {color:#10b981; font-weight:bold; margin-bottom:8px;}
+    .project-hero p {margin-top:16px; color:#d1d5db; line-height:1.6;}
+</style>
+</head>
+<body class="has-sidebar">
+
+<header class="site-header">
+    <div class="site-header-inner">
+        <div class="site-header-top">
+            <a class="logo-link" href="../index.html" aria-label="Home">
+                <img src="../assets/images/logo.png" alt="Logo" class="logo">
+            </a>
+            <a class="site-home-link" href="../index.html">Main Page</a>
+        </div>
+        <div class="site-header-bottom">
+            <div class="site-header-left">
+                <div class="header-title">Engineering Portfolio</div>
+                <nav class="primary-nav" aria-label="Engineering Portfolio">
+                    <a href="../portfolio.html">Home</a>
+                    <a href="../about.html">About Me</a>
+                    <a href="../work.html">Work Experience</a>
+                    <a href="../projects.html">Projects</a>
+                </nav>
+            </div>
+
+            <div class="site-header-right">
+                <div class="header-title">Fabrication &amp; Product Development Services</div>
+                <nav class="service-nav" aria-label="Fabrication Services">
+                    <a href="../fabrication.html">Home</a>
+                    <a href="../lab-3d-printing.html">3D Printing</a>
+                    <a href="../lab-laser-engraving.html">Laser Engraving</a>
+                    <a href="../lab-product-development.html">Product Development</a>
+                </nav>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="container">
+    <!-- SIDE PANEL -->
+    <aside class="side-panel">
+        <h3>Projects</h3>
+        <ul>
+            <li><a href="../projects.html">Project Summary</a></li>
+            <li><a href="crads.html">CRADS 360° SMD</a></li>
+            <li><a href="hex-meshing.html">Hex Dominant Meshing Tool</a></li>
+            <li><a href="hex-spinners.html">Hex Spinners</a></li>
+            <li><a href="milo.html" class="active">MILO</a></li>
+            <li><a href="sifm.html">SIFM</a></li>
+        </ul>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <div class="project-hero">
+            <div class="project-meta">2025</div>
+            <h2>MILO</h2>
+            <img src="../assets/images/milo1.gif" alt="MILO gesture recognition demo">
+            <p>
+                MILO (Motion Input for Language and Operation) is a sign language detection system I built using computer vision and a custom neural network. It can recognize hand gestures and learn new ones over time, allowing those gestures to be used to control a mouse or type on a computer.
+            </p>
+
+            <p>
+                The project uses OpenCV and MediaPipe for real-time hand tracking, combined with a custom neural network for gesture classification. It supports trainable gestures, so new inputs can be added and mapped to different actions.
+            </p>
+
+            <p>
+                I created MILO to learn how to build and train neural networks and to explore more advanced machine learning concepts. All of the code was written from scratch, and it was a project I really enjoyed working on.
+            </p>
+
+            <p>
+                I plan to continue developing MILO and eventually use it as a tool to help people learn sign language.
+            </p>
+
+            <p>Click on the video below to see MILO in action.</p>
+            <div style="margin-bottom:24px; text-align:center;">
+                <video width="100%" style="max-width:800px;" controls>
+                    <source src="../assets/images/milo1.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+                <p style="color:#d1d5db; margin-bottom:32px;">If the video does not display, <a href="https://youtu.be/hqOM7juGU1Q?si=tVn04j4k5dQLvBjB" target="_blank" rel="noopener noreferrer" style="color:#10b981;">click here to watch on YouTube.</a></p>
+            </div>
+
+            <h3 style="color:#10b981; margin-top:0;">Presentation</h3>
+            <p>Below is a presentation that shows the different features you can use.</p>
+            <div style="background:#fff; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.10); padding:12px; margin-bottom:24px;">
+                <embed src="../assets/images/milo.pdf" type="application/pdf" width="100%" height="500px" style="border-radius:8px;">
+                <p style="color:#d1d5db;">If the PDF does not display, <a href="../assets/images/milo.pdf" target="_blank" rel="noopener noreferrer" style="color:#10b981;">click here to download.</a></p>
+            </div>
+        </div>
+    </main>
+</div>
+
+<footer>
+    <p>&copy; 2025 Samson Galvin</p>
+</footer>
+
+<script src="../assets/js/layout.js" defer></script>
+
+</body>
+</html>

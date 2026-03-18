@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Projects - Samson Galvin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+    .projects-grid {display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px;}
+
+    .project-card {background-color: #111827; border-radius: 14px; overflow: hidden; transition: transform 0.3s, box-shadow 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.3);}
+    .project-card:hover {transform: translateY(-8px); box-shadow: 0 12px 30px rgba(16, 185, 129, 0.3);}
+    .project-card-link {display: block; text-decoration: none; color: inherit;}
+
+    .project-image {background: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden; height: 200px;}
+    .project-image img {width: 100%; height: 100%; object-fit: cover;}
+
+    /* Project-specific image scaling */
+    #crads .project-image img {width: 75%; height: auto; object-fit: contain; transform: scale(0.8);}
+    #hex-meshing .project-image img {width: 50%; height: auto; object-fit: contain;}
+    #hex-spinners .project-image img {width: 75%; height: auto; object-fit: contain; display: block; margin: 0 auto;}
+    #milo .project-image img {width: 70%; height: auto; object-fit: contain; display: block; margin: 80px auto 0 auto;}
+    #sifm .project-image img {width: 90%; height: auto; object-fit: contain; display: block; margin: 0 auto;}
+
+    .project-content {padding: 25px;}
+    .project-year {color: #10b981; font-size: 0.9rem; font-weight: bold; margin-bottom: 8px;}
+    .project-card h3 {color: #ffffff; margin-bottom: 12px; font-size: 1.4rem;}
+    .project-card p {color: #d1d5db; line-height: 1.6; font-size: 0.95rem;}
+
+    /* List style for items in project description */
+    .project-card-content-list {margin:0.5em 0 0 1.2em; padding:0; list-style-type: disc; color:#10b981; font-size:0.95em;}
+
+    /* FOCUS for accessibility */
+    .project-card-link:focus .project-card {outline: 2px solid #10b981; outline-offset: 4px;}
+
+    @media (max-width: 768px) {
+        .projects-grid {grid-template-columns: 1fr;}
+    }
+</style>
+</head>
+<body class="has-sidebar">
+
+<header class="site-header">
+    <div class="site-header-inner">
+        <div class="site-header-top">
+            <a class="logo-link" href="index.html" aria-label="Home">
+                <img src="assets/images/logo.png" alt="Logo" class="logo">
+            </a>
+            <a class="site-home-link" href="index.html">Main Page</a>
+        </div>
+        <div class="site-header-bottom">
+            <div class="site-header-left">
+                <div class="header-title">Engineering Portfolio</div>
+                <nav class="primary-nav" aria-label="Engineering Portfolio">
+                    <a href="portfolio.html">Home</a>
+                    <a href="about.html">About Me</a>
+                    <a href="work.html">Work Experience</a>
+                    <a href="projects.html">Projects</a>
+                </nav>
+            </div>
+
+            <div class="site-header-right">
+                <div class="header-title">Fabrication &amp; Product Development Services</div>
+                <nav class="service-nav" aria-label="Fabrication Services">
+                    <a href="fabrication.html">Home</a>
+                    <a href="lab-3d-printing.html">3D Printing</a>
+                    <a href="lab-laser-engraving.html">Laser Engraving</a>
+                    <a href="lab-product-development.html">Product Development</a>
+                </nav>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="container">
+    <!-- SIDE PANEL -->
+    <aside class="side-panel">
+        <h3>Projects</h3>
+        <ul>
+            <li><a href="projects.html" class="active">Project Summary</a></li>
+            <li><a href="projects/crads.html">CRADS 360° SMD</a></li>
+            <li><a href="projects/hex-meshing.html">Hex Dominant Meshing Tool</a></li>
+            <li><a href="projects/hex-spinners.html">Hex Spinners</a></li>
+            <li><a href="projects/milo.html">MILO</a></li>
+            <li><a href="projects/sifm.html">SIFM</a></li>
+        </ul>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <h2 style="color: #10b981; font-size: 2rem; margin-bottom: 30px;">My Projects</h2>
+
+        <p style="color: #d1d5db; font-size: 1.1rem; margin-bottom: 36px; max-width: 700px;">
+            This page highlights my personal engineering projects and graduate research. My personal projects are pursued in my free time as a hobby, allowing me to explore new skills and creatively design mechanical, electrical, and computer engineering projects.
+        </p>
+
+        <div class="projects-grid">
+
+            <!-- CRADS 360 SMD -->
+            <a class="project-card-link" href="projects/crads.html">
+                <div class="project-card" id="crads">
+                    <div class="project-image">
+                        <img src="assets/images/crads1.png" alt="CRADS 360 SMD Sensor">
+                    </div>
+                    <div class="project-content">
+                        <h3>CRADS 360° SMD</h3>
+                        <p>Continuous Rotation Angle Detection Sensor (CRADS) - Novel cost effective continuous 0–360° rotary position sensing without dead zones.
+                        <ul class="project-card-content-list"><li>Patent No: US 12584725 - issued 03/24/26</li></ul></p>
+                        <div class="project-year"><strong>Year Started:</strong> 2023</div>
+                    </div>
+                </div>
+            </a>
+
+            <!-- HEX DOMINANT MESHING TOOL -->
+            <a class="project-card-link" href="projects/hex-meshing.html">
+                <div class="project-card" id="hex-meshing">
+                    <div class="project-image">
+                        <img src="assets/images/hand_gif.gif" alt="Hex Dominant Meshing Tool">
+                    </div>
+                    <div class="project-content">
+                        <h3>Hex Dominant Meshing Tool</h3>
+                        <p>Automated hex-dominant meshing tool that generates meshes from CAD (STEP) and surface (STL/OBJ) geometries using a voxelization-based approach.</p>
+                        <div class="project-year"><strong>Year Started:</strong> 2025</div>
+                    </div>
+                </div>
+            </a>
+
+            <!-- HEX SPINNERS -->
+            <a class="project-card-link" href="projects/hex-spinners.html">
+                <div class="project-card" id="hex-spinners">
+                    <div class="project-image">
+                        <img src="assets/images/hs_logo.png" alt="Hex Spinners">
+                    </div>
+                    <div class="project-content">
+                        <h3>Hex Spinners</h3>
+                        <p>Designed and manufacture a silent magnetic fidget toy.
+                        <ul class="project-card-content-list"><li>Patent pending</li><li>Hex Fidgets LLC</li></ul></p>
+                        <div class="project-year"><strong>Year Started:</strong> 2024</div>
+                    </div>
+                </div>
+            </a>
+
+            <!-- MILO -->
+            <a class="project-card-link" href="projects/milo.html">
+                <div class="project-card" id="milo">
+                    <div class="project-image">
+                        <img src="assets/images/milo1.gif" alt="MILO Project">
+                    </div>
+                    <div class="project-content">
+                        <h3>MILO</h3>
+                        <p>Developed MILO (Motion Input for Language and Operation), a custom neural network and GUI that learns hand gestures and interprets basic sign language.</p>
+                        <div class="project-year"><strong>Year Started:</strong> 2025</div>
+                    </div>
+                </div>
+            </a>
+
+            <!-- SIFM -->
+            <a class="project-card-link" href="projects/sifm.html">
+                <div class="project-card" id="sifm">
+                    <div class="project-image">
+                        <img src="assets/images/lap1.png" alt="SIFM Project">
+                    </div>
+                    <div class="project-content">
+                        <h3>Graduate research: SIFM</h3>
+                        <p>Developed the Single Incision Free Motion (SIFM) laparoscopic system, a magnetically actuated surgical platform that enables increased tool mobility through a single incision.
+                        <ul class="project-card-content-list"><li>Multiple publications</li><li>Patent - international publication number: WO 2023/043693 A1 - issued 03/23/23</li></ul></p>
+                        <div class="project-year"><strong>Year Started:</strong> 2021</div>
+                    </div>
+                </div>
+            </a>
+
+        </div>
+    </main>
+</div>
+
+<footer>
+    <p>&copy; 2025 Samson Galvin. All rights reserved.</p>
+</footer>
+
+<script src="assets/js/layout.js" defer></script>
+
+</body>
+</html>

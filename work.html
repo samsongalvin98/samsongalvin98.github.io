@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Work - Samson Galvin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1f2933;
+            color: #e5e7eb;
+        }
+
+        header {
+            text-align: center;
+            background-color: #111827;
+            padding: 20px 0;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .header-container img.logo {
+            height: 50px;
+            width: auto;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2rem;
+            color: #ffffff;
+        }
+
+        nav a {
+            margin: 0 15px;
+            color: #10b981;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        nav a.active {
+            color: #ffffff;
+            font-weight: bold;
+            border-bottom: 2px solid #10b981;
+        }
+
+        .fab-link{
+            color:#e5e7eb;
+            text-decoration:none;
+            font-weight:600;
+        }
+        .fab-link:hover{color:#ffffff;text-decoration:underline;}
+
+        .fab-row{
+            margin-top:10px;
+            text-align:center;
+        }
+
+        section {
+            max-width: 1000px;
+            margin: 60px auto;
+            padding: 0 20px;
+        }
+
+        h2.section-title {
+            color: #10b981;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .job {
+            background-color: #111827;
+            padding: 25px 30px;
+            border-radius: 14px;
+            margin-bottom: 30px;
+        }
+
+        .job h3 {
+            margin-top: 0;
+            color: #10b981;
+        }
+
+        .job h4 {
+            margin: 5px 0;
+            font-weight: normal;
+            opacity: 0.9;
+        }
+
+        .job ul {
+            padding-left: 20px;
+        }
+
+        .job ul li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px;
+            opacity: 0.6;
+        }
+
+        a {
+            color: #10b981;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body class="has-sidebar">
+
+<header class="site-header">
+    <div class="site-header-inner">
+        <div class="site-header-top">
+            <a class="logo-link" href="index.html" aria-label="Home">
+                <img src="assets/images/logo.png" alt="Logo" class="logo">
+            </a>
+            <a class="site-home-link" href="index.html">Main Page</a>
+        </div>
+        <div class="site-header-bottom">
+            <div class="site-header-left">
+                <div class="header-title">Engineering Portfolio</div>
+                <nav class="primary-nav" aria-label="Engineering Portfolio">
+                    <a href="portfolio.html">Home</a>
+                    <a href="about.html">About Me</a>
+                    <a href="work.html">Work Experience</a>
+                    <a href="projects.html">Projects</a>
+                </nav>
+            </div>
+
+            <div class="site-header-right">
+                <div class="header-title">Fabrication &amp; Product Development Services</div>
+                <nav class="service-nav" aria-label="Fabrication Services">
+                    <a href="fabrication.html">Home</a>
+                    <a href="lab-3d-printing.html">3D Printing</a>
+                    <a href="lab-laser-engraving.html">Laser Engraving</a>
+                    <a href="lab-product-development.html">Product Development</a>
+                </nav>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="container">
+    <aside class="side-panel">
+        <h3>Work</h3>
+        <ul>
+            <li><a href="#overview">Overview</a></li>
+            <li><a href="#deka-job">DEKA (Full-time)</a></li>
+            <li><a href="#asml-job">ASML (Full-time)</a></li>
+            <li><a href="#grad-research">Penn State (Graduate Research)</a></li>
+            <li><a href="#deka-intern">DEKA (Intern)</a></li>
+            <li><a href="#bruce-diamond">Bruce Diamond (Intern)</a></li>
+            <li><a href="#pennstate">Penn State (TA)</a></li>
+        </ul>
+    </aside>
+
+    <main class="main-content">
+
+<section id="overview">
+    <h2 class="section-title">Professional Experience & Education</h2>
+
+    <p style="max-width: 850px; margin: 0 auto 30px auto; text-align: center; opacity: 0.9; line-height: 1.6;">
+        This page is a high-level overview of my professional experience, internships, and academic research.
+        It highlights the roles and projects that shaped my engineering foundation, from hands-on manufacturing and design
+        to graduate research and full-time product development work.
+    </p>
+
+    <!-- DEKA -->
+    <div class="job" id="deka-job">
+        <a href="projects.html#deka" style="display: block; text-align: center; margin-bottom: 15px;">
+            <img src="assets/images/deka1.png" alt="DEKA Research & Development" style="width: 300px; border-radius: 14px; display: inline-block;">
+        </a>
+        <h3>Mechanical Design Engineer</h3>
+        <h4>DEKA Research & Development, Manchester, NH | Feb 2025 – Present</h4>
+        <ul>
+            <li>Design electromechanical and pneumatic fixtures for calibration and validation.</li>
+            <li>Perform structural simulations to inform and improve designs.</li>
+            <li>Create detailed technical drawings with GD&amp;T.</li>
+            <li>Redesigned an existing fixture by adding motorized actuation and a vision sensor to improve accuracy and repeatability.</li>
+            <li>Developed Python-based control software and a custom GUI to support automated operation and testing.</li>
+            <li>Collaborate with cross-functional teams to support testing and design iteration.</li>
+        </ul>
+    </div>
+
+    <!-- ASML -->
+    <div class="job" id="asml-job">
+        <a href="projects.html#asml" style="display: block; text-align: center; margin-bottom: 15px;">
+            <img src="assets/images/asml.jpg" alt="ASML Metrology Machine" style="width: 300px; border-radius: 14px; display: inline-block;">
+        </a>
+        <h3>Mechanical Design Engineer</h3>
+        <h4>ASML (Full-time), Wilton, CT | June 2023 – Feb 2025</h4>
+        <ul>
+            <li>Designed precise mechanical components for high-precision metrology machines, including flexures.</li>
+            <li>Performed tolerance stacks, modal and structural analysis, and bolt calculations.</li>
+            <li>Created assembly sequences and designs in NX adhering to GD&T and DFM standards.</li>
+            <li>Led intern projects and collaborated on complex design reviews.</li>
+        </ul>
+    </div>
+
+    <!-- Graduate Research -->
+    <div class="job" id="grad-research">
+        <a href="projects.html#laparoscopic" style="display: block; text-align: center; margin-bottom: 15px;">
+            <img src="assets/images/lap1.png" alt="Penn State Graduate Research" style="width: 300px; border-radius: 14px; display: inline-block;">
+        </a>
+        <h3>Graduate Research Assistant</h3>
+        <h4>Penn State (Graduate Research), University Park, PA | Aug 2021 – May 2023</h4>
+        <ul>
+            <li>Designed the SIFM Laparoscopic Surgical System, a single-incision free-motion laparoscopic tool.</li>
+            <li>Developed a laparoscopic haptic simulator using machine learning to calculate forces.</li>
+            <li>Collaborated with medical professionals and students to develop prototypes and simulations in Python, MediaPipe, ANSYS, and MATLAB.</li>
+            <li>Led a team of undergraduates and published papers on the SIFM system and laparoscopic trocar insertion simulation.</li>
+        </ul>
+    </div>
+
+    <!-- DEKA Internship -->
+    <div class="job" id="deka-intern">
+        <a href="projects.html#deka" style="display: block; text-align: center; margin-bottom: 15px;">
+            <img src="assets/images/deka1.png" alt="DEKA Internship" style="width: 300px; border-radius: 14px; display: inline-block;">
+        </a>
+        <h3>Mechanical Design Engineer Intern</h3>
+        <h4>DEKA Research & Development, Manchester, NH | May 2021 – Aug 2021</h4>
+        <ul>
+            <li>Designed fluid path membranes and over 10 components for injection molding and 3D printing.</li>
+            <li>Performed stress, thermal, and fluid analysis using FEA software.</li>
+            <li>Tested and analyzed different material properties for medical devices.</li>
+        </ul>
+    </div>
+
+    <!-- Bruce Diamond -->
+    <div class="job" id="bruce-diamond">
+        <a href="projects.html#bruce-diamond" style="display: block; text-align: center; margin-bottom: 15px;">
+            <img src="assets/images/fanuc.jpg" alt="Bruce Diamond Internship" style="width: 300px; border-radius: 14px; display: inline-block;">
+        </a>
+        <h3>Mechanical Engineer Intern</h3>
+        <h4>Bruce Diamond (Intern), Attleboro, MA | May 2020 – Jul 2020</h4>
+        <ul>
+            <li>Programmed FANUC industrial robots and operated 5-axis CNC machines.</li>
+            <li>Designed parts and created detailed SolidWorks drawings.</li>
+            <li>Developed an operations manual and communicated manufacturing protocols.</li>
+        </ul>
+    </div>
+
+    <!-- PSU Undergraduate -->
+    <div class="job" id="pennstate">
+        <a href="projects.html#pennstate" style="display: block; text-align: center; margin-bottom: 15px;">
+            <img src="assets/images/pennstate1.png" alt="Penn State Undergraduate" style="width: 300px; border-radius: 14px; display: inline-block;">
+        </a>
+        <h3>Engineering & Design Learning Assistant</h3>
+        <h4>Penn State University, University Park, PA | Aug 2018 – Nov 2020</h4>
+        <ul>
+            <li>Led SolidWorks and engineering design workshops.</li>
+            <li>Mentored ~20 students per semester and assisted professors in project guidance.</li>
+            <li>Motivated teams and acted as an additional educational resource.</li>
+        </ul>
+    </div>
+
+</section>
+
+    </main>
+</div>
+
+
+
+<footer>
+    © 2025 Samson Galvin
+</footer>
+
+<script src="assets/js/layout.js" defer></script>
+
+</body>
+</html>

@@ -1,0 +1,1673 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>STL + Laser Job Estimator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-1: #fff9ef;
+      --bg-2: #e8f6f4;
+      --ink: #16232b;
+      --muted: #4d5e65;
+      --panel: rgba(255, 255, 255, 0.86);
+      --line: #c9dbd8;
+      --accent: #0b7f72;
+      --accent-2: #ef6a2f;
+      --ok: #18804e;
+      --warn: #b56200;
+      --shadow: 0 16px 45px rgba(20, 44, 52, 0.12);
+      --radius-lg: 20px;
+      --radius-md: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      color: var(--ink);
+      font-family: "Space Grotesk", "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 8% 12%, rgba(239, 106, 47, 0.16), transparent 32%),
+        radial-gradient(circle at 92% 88%, rgba(11, 127, 114, 0.2), transparent 34%),
+        linear-gradient(135deg, var(--bg-1), var(--bg-2));
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        repeating-linear-gradient(
+          -25deg,
+          rgba(255, 255, 255, 0.14),
+          rgba(255, 255, 255, 0.14) 12px,
+          rgba(255, 255, 255, 0.04) 12px,
+          rgba(255, 255, 255, 0.04) 24px
+        );
+      opacity: 0.28;
+      animation: drift 16s linear infinite;
+    }
+
+    .container {
+      width: min(1100px, calc(100% - 2.2rem));
+      margin: 1.5rem auto 2rem;
+      display: grid;
+      gap: 1rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero {
+      padding: 1.3rem 1.4rem;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(120deg, rgba(255, 255, 255, 0.9), rgba(255, 245, 234, 0.85));
+      border: 1px solid rgba(239, 106, 47, 0.24);
+      box-shadow: var(--shadow);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.28rem 0.68rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #0f4e46;
+      background: rgba(11, 127, 114, 0.12);
+      border: 1px solid rgba(11, 127, 114, 0.3);
+    }
+
+    h1 {
+      margin: 0.65rem 0 0.4rem;
+      line-height: 1.1;
+      font-size: clamp(1.55rem, 3.7vw, 2.45rem);
+      letter-spacing: 0.02em;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1.13rem;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .panel {
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(4px);
+      padding: 1.1rem;
+      display: grid;
+      gap: 0.95rem;
+    }
+
+    .upload-zone {
+      border: 2px dashed rgba(11, 127, 114, 0.45);
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, rgba(11, 127, 114, 0.06), rgba(239, 106, 47, 0.05));
+      min-height: 130px;
+      display: grid;
+      place-content: center;
+      gap: 0.55rem;
+      text-align: center;
+      padding: 1rem;
+      cursor: pointer;
+      transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .upload-zone:hover {
+      transform: translateY(-1px);
+      border-color: rgba(11, 127, 114, 0.7);
+    }
+
+    .upload-zone.drag {
+      border-color: var(--accent-2);
+      background: linear-gradient(135deg, rgba(239, 106, 47, 0.15), rgba(11, 127, 114, 0.11));
+    }
+
+    .small-note {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .mono {
+      font-family: "IBM Plex Mono", "Consolas", monospace;
+      font-size: 0.88rem;
+      color: #243740;
+      overflow-wrap: anywhere;
+    }
+
+    .status {
+      font-size: 0.92rem;
+      padding: 0.58rem 0.72rem;
+      border-radius: 11px;
+      border: 1px solid transparent;
+      background: rgba(22, 35, 43, 0.04);
+      color: var(--muted);
+    }
+
+    .status.ok {
+      color: var(--ok);
+      border-color: rgba(24, 128, 78, 0.25);
+      background: rgba(24, 128, 78, 0.08);
+    }
+
+    .status.warn {
+      color: var(--warn);
+      border-color: rgba(181, 98, 0, 0.25);
+      background: rgba(181, 98, 0, 0.09);
+    }
+
+    .input-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .field {
+      display: grid;
+      gap: 0.38rem;
+    }
+
+    .field span {
+      color: #33454d;
+      font-size: 0.84rem;
+      font-weight: 600;
+    }
+
+    .field input,
+    .field select {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 0.58rem 0.62rem;
+      background: rgba(255, 255, 255, 0.87);
+      font: inherit;
+      color: var(--ink);
+    }
+
+    .field input:focus,
+    .field select:focus {
+      outline: 2px solid rgba(11, 127, 114, 0.23);
+      border-color: rgba(11, 127, 114, 0.42);
+    }
+
+    .results {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+      gap: 0.72rem;
+    }
+
+    .metric {
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(22, 35, 43, 0.1);
+      background: rgba(255, 255, 255, 0.9);
+      padding: 0.8rem;
+      box-shadow: 0 8px 20px rgba(20, 44, 52, 0.08);
+      min-height: 118px;
+      display: grid;
+      align-content: start;
+      gap: 0.42rem;
+    }
+
+    .metric h3 {
+      margin: 0;
+      font-size: 0.9rem;
+      color: #3b4e56;
+      font-weight: 600;
+    }
+
+    .metric p {
+      margin: 0;
+      color: var(--ink);
+      font-size: 1.18rem;
+      font-weight: 700;
+      line-height: 1.18;
+      letter-spacing: 0.01em;
+    }
+
+    .metric small {
+      color: var(--muted);
+      font-size: 0.81rem;
+      line-height: 1.25;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .fade {
+      opacity: 0;
+      transform: translateY(8px);
+      animation: rise 0.55s ease forwards;
+    }
+
+    .hint {
+      font-size: 0.86rem;
+      color: #40535a;
+      line-height: 1.35;
+    }
+
+    #svgMeasureSandbox {
+      position: fixed;
+      left: -200vw;
+      top: -200vh;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    @keyframes rise {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes drift {
+      from {
+        transform: translateX(0);
+      }
+      to {
+        transform: translateX(48px);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        width: min(100%, calc(100% - 1.1rem));
+        margin-top: 0.9rem;
+      }
+
+      .panel,
+      .hero {
+        padding: 0.9rem;
+      }
+
+      .metric {
+        min-height: 105px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <section class="hero fade">
+      <span class="badge">Single HTML app</span>
+      <h1>STL + Laser Job Estimator</h1>
+      <p>Upload STL for 3D print estimates, or SVG/PNG for laser cut and engrave time estimates.</p>
+    </section>
+
+    <section class="panel fade" style="animation-delay: 0.06s;">
+      <div id="uploadZone" class="upload-zone" role="button" tabindex="0" aria-label="Upload STL file">
+        <input id="fileInput" type="file" accept=".stl,.svg,.png" hidden>
+        <p><strong>Drag and drop STL, SVG, or PNG</strong> or click to browse</p>
+        <p class="small-note">STL estimates 3D print. SVG/PNG estimate laser cut or raster engrave time.</p>
+      </div>
+      <div id="fileInfo" class="mono hidden"></div>
+      <div id="status" class="status">Waiting for STL, SVG, or PNG upload.</div>
+    </section>
+
+    <section id="printSettingsPanel" class="panel fade" style="animation-delay: 0.11s;">
+      <h2>3D Print Settings (STL)</h2>
+      <div class="input-grid">
+        <label class="field">
+          <span>Model unit in STL</span>
+          <select id="modelUnit">
+            <option value="mm" selected>Millimeters (mm)</option>
+            <option value="cm">Centimeters (cm)</option>
+            <option value="in">Inches (in)</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Infill (%)</span>
+          <input id="infillPct" type="number" min="0" max="100" step="1" value="20">
+        </label>
+
+        <label class="field">
+          <span>Layer height (mm)</span>
+          <input id="layerHeight" type="number" min="0.05" max="0.6" step="0.01" value="0.2">
+        </label>
+
+        <label class="field">
+          <span>Print speed (mm/s)</span>
+          <input id="printSpeed" type="number" min="10" max="300" step="1" value="55">
+        </label>
+
+        <label class="field">
+          <span>Line width (mm)</span>
+          <input id="lineWidth" type="number" min="0.2" max="1.2" step="0.01" value="0.45">
+        </label>
+
+        <label class="field">
+          <span>Wall lines</span>
+          <input id="wallLines" type="number" min="1" max="10" step="1" value="3">
+        </label>
+
+        <label class="field">
+          <span>Top/Bottom layers</span>
+          <input id="topBottomLayers" type="number" min="1" max="20" step="1" value="5">
+        </label>
+
+        <label class="field">
+          <span>Support material (%)</span>
+          <input id="supportPct" type="number" min="0" max="200" step="1" value="0">
+        </label>
+
+        <label class="field">
+          <span>Filament diameter (mm)</span>
+          <input id="filamentDiameter" type="number" min="1" max="3" step="0.01" value="1.75">
+        </label>
+
+        <label class="field">
+          <span>Filament density (g/cm3)</span>
+          <input id="density" type="number" min="0.5" max="2.5" step="0.01" value="1.24">
+        </label>
+
+        <label class="field">
+          <span>Filament price ($/kg)</span>
+          <input id="costKg" type="number" min="0" max="200" step="0.1" value="24">
+        </label>
+
+        <label class="field">
+          <span>Overhead (%)</span>
+          <input id="overheadPct" type="number" min="0" max="300" step="1" value="35">
+        </label>
+
+        <label class="field">
+          <span>Flow efficiency (0-1)</span>
+          <input id="flowEfficiency" type="number" min="0.3" max="1" step="0.01" value="0.82">
+        </label>
+      </div>
+      <p class="hint">Tip: matching these settings to your slicer profile improves estimates.</p>
+    </section>
+
+    <section id="laserSettingsPanel" class="panel fade hidden" style="animation-delay: 0.12s;">
+      <h2>Laser Settings (SVG/PNG)</h2>
+      <div class="input-grid">
+        <label class="field">
+          <span>Material</span>
+          <select id="laserMaterial">
+            <option value="plywood" selected>Plywood</option>
+            <option value="acrylic">Acrylic</option>
+            <option value="mdf">MDF</option>
+            <option value="cardboard">Cardboard</option>
+            <option value="leather">Leather</option>
+            <option value="paper">Paper</option>
+            <option value="foam">Foam board</option>
+            <option value="fabric">Fabric/Felt</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Material thickness (mm)</span>
+          <input id="laserThickness" type="number" min="0.1" max="40" step="0.1" value="3">
+        </label>
+
+        <label class="field">
+          <span>Laser power (W)</span>
+          <input id="laserPower" type="number" min="5" max="300" step="1" value="40">
+        </label>
+
+        <label class="field">
+          <span>Base cut speed (mm/s at 40W, 3mm)</span>
+          <input id="baseCutSpeed" type="number" min="0.5" max="250" step="0.1" value="8">
+        </label>
+
+        <label class="field">
+          <span>Passes</span>
+          <input id="laserPasses" type="number" min="1" max="20" step="1" value="1">
+        </label>
+
+        <label class="field">
+          <span>Start delay per path (s)</span>
+          <input id="laserStartDelay" type="number" min="0" max="5" step="0.01" value="0.35">
+        </label>
+
+        <label class="field">
+          <span>Laser overhead (%)</span>
+          <input id="laserOverheadPct" type="number" min="0" max="300" step="1" value="20">
+        </label>
+
+        <label class="field">
+          <span>Kerf width (mm)</span>
+          <input id="laserKerf" type="number" min="0.01" max="2" step="0.01" value="0.15">
+        </label>
+
+        <label class="field">
+          <span>Machine rate ($/hr)</span>
+          <input id="laserHourlyCost" type="number" min="0" max="500" step="0.5" value="0">
+        </label>
+
+        <label class="field">
+          <span>Default SVG unit (if unitless)</span>
+          <select id="svgDefaultUnit">
+            <option value="mm" selected>mm</option>
+            <option value="cm">cm</option>
+            <option value="in">in</option>
+            <option value="px">px (96 DPI)</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>PNG mode</span>
+          <select id="pngMode">
+            <option value="trace" selected>Trace Cut (edge/perimeter)</option>
+            <option value="engrave">Raster Engrave</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>PNG DPI (for real size)</span>
+          <input id="pngDpi" type="number" min="20" max="2400" step="1" value="300">
+        </label>
+
+        <label class="field">
+          <span>PNG dark threshold (0-255)</span>
+          <input id="pngDarkThreshold" type="number" min="0" max="255" step="1" value="220">
+        </label>
+
+        <label class="field">
+          <span>Raster speed (mm/s, PNG engrave)</span>
+          <input id="engraveSpeed" type="number" min="10" max="3000" step="1" value="180">
+        </label>
+      </div>
+      <p class="hint">SVG is treated as vector cutting paths. PNG can be estimated as edge-trace cutting or raster engraving.</p>
+    </section>
+
+    <section id="printResults" class="results hidden fade" style="animation-delay: 0.14s;">
+      <article class="metric">
+        <h3>Model Volume</h3>
+        <p id="volumeMain">-</p>
+        <small id="volumeAlt">-</small>
+      </article>
+
+      <article class="metric">
+        <h3>Estimated Material</h3>
+        <p id="materialMain">-</p>
+        <small id="materialAlt">-</small>
+      </article>
+
+      <article class="metric">
+        <h3>Filament Length</h3>
+        <p id="filamentMain">-</p>
+        <small id="filamentAlt">-</small>
+      </article>
+
+      <article class="metric">
+        <h3>Estimated Print Time</h3>
+        <p id="timeMain">-</p>
+        <small id="timeAlt">-</small>
+      </article>
+
+      <article class="metric">
+        <h3>Estimated Cost</h3>
+        <p id="costMain">-</p>
+        <small id="costAlt">-</small>
+      </article>
+
+      <article class="metric">
+        <h3>Bounding Box</h3>
+        <p id="sizeMain">-</p>
+        <small id="sizeAlt">-</small>
+      </article>
+    </section>
+
+    <section id="laserResults" class="results hidden fade" style="animation-delay: 0.15s;">
+      <article class="metric">
+        <h3>Laser Job Type</h3>
+        <p id="laserTypeMain">-</p>
+        <small id="laserTypeAlt">-</small>
+      </article>
+
+      <article class="metric">
+        <h3>Path / Sweep Length</h3>
+        <p id="laserLengthMain">-</p>
+        <small id="laserLengthAlt">-</small>
+      </article>
+
+      <article class="metric">
+        <h3>Estimated Laser Time</h3>
+        <p id="laserTimeMain">-</p>
+        <small id="laserTimeAlt">-</small>
+      </article>
+
+      <article class="metric">
+        <h3>Effective Speed</h3>
+        <p id="laserSpeedMain">-</p>
+        <small id="laserSpeedAlt">-</small>
+      </article>
+
+      <article class="metric">
+        <h3>Material / Coverage</h3>
+        <p id="laserMaterialMain">-</p>
+        <small id="laserMaterialAlt">-</small>
+      </article>
+
+      <article class="metric">
+        <h3>Work Area + Cost</h3>
+        <p id="laserSizeMain">-</p>
+        <small id="laserSizeAlt">-</small>
+      </article>
+    </section>
+
+    <section class="panel fade" style="animation-delay: 0.17s;">
+      <h2>Estimation Notes</h2>
+      <p class="small-note">
+        STL estimates use mesh volume plus profile-based print assumptions.
+        SVG/PNG laser estimates are based on path length, machine speed, passes, overhead, and raster coverage.
+        Final time depends on your controller, acceleration, pierce behavior, and machine tuning.
+      </p>
+    </section>
+  </main>
+
+  <div id="svgMeasureSandbox" aria-hidden="true"></div>
+
+  <script>
+    const UNIT_TO_MM = {
+      mm: 1,
+      cm: 10,
+      in: 25.4
+    };
+
+    const SVG_UNIT_TO_MM = {
+      mm: 1,
+      cm: 10,
+      in: 25.4,
+      px: 25.4 / 96,
+      pt: 25.4 / 72,
+      pc: 25.4 / 6,
+      m: 1000,
+      ft: 304.8
+    };
+
+    const LASER_MATERIAL_FACTOR = {
+      plywood: 1.0,
+      acrylic: 0.78,
+      mdf: 0.9,
+      cardboard: 2.35,
+      leather: 1.65,
+      paper: 3.0,
+      foam: 1.35,
+      fabric: 2.0
+    };
+
+    const state = {
+      fileName: "",
+      fileType: null,
+      sourceFile: null,
+      meshRaw: null,
+      laserRaw: null,
+      pngCacheKey: "",
+      recomputeToken: 0
+    };
+
+    const printIds = [
+      "modelUnit", "infillPct", "layerHeight", "printSpeed", "lineWidth", "wallLines",
+      "topBottomLayers", "supportPct", "filamentDiameter", "density", "costKg",
+      "overheadPct", "flowEfficiency"
+    ];
+
+    const laserIds = [
+      "laserMaterial", "laserThickness", "laserPower", "baseCutSpeed", "laserPasses",
+      "laserStartDelay", "laserOverheadPct", "laserKerf", "laserHourlyCost", "svgDefaultUnit",
+      "pngMode", "pngDpi", "pngDarkThreshold", "engraveSpeed"
+    ];
+
+    const ui = {
+      uploadZone: document.getElementById("uploadZone"),
+      fileInput: document.getElementById("fileInput"),
+      fileInfo: document.getElementById("fileInfo"),
+      status: document.getElementById("status"),
+      printSettingsPanel: document.getElementById("printSettingsPanel"),
+      laserSettingsPanel: document.getElementById("laserSettingsPanel"),
+      printResults: document.getElementById("printResults"),
+      laserResults: document.getElementById("laserResults"),
+      volumeMain: document.getElementById("volumeMain"),
+      volumeAlt: document.getElementById("volumeAlt"),
+      materialMain: document.getElementById("materialMain"),
+      materialAlt: document.getElementById("materialAlt"),
+      filamentMain: document.getElementById("filamentMain"),
+      filamentAlt: document.getElementById("filamentAlt"),
+      timeMain: document.getElementById("timeMain"),
+      timeAlt: document.getElementById("timeAlt"),
+      costMain: document.getElementById("costMain"),
+      costAlt: document.getElementById("costAlt"),
+      sizeMain: document.getElementById("sizeMain"),
+      sizeAlt: document.getElementById("sizeAlt"),
+      laserTypeMain: document.getElementById("laserTypeMain"),
+      laserTypeAlt: document.getElementById("laserTypeAlt"),
+      laserLengthMain: document.getElementById("laserLengthMain"),
+      laserLengthAlt: document.getElementById("laserLengthAlt"),
+      laserTimeMain: document.getElementById("laserTimeMain"),
+      laserTimeAlt: document.getElementById("laserTimeAlt"),
+      laserSpeedMain: document.getElementById("laserSpeedMain"),
+      laserSpeedAlt: document.getElementById("laserSpeedAlt"),
+      laserMaterialMain: document.getElementById("laserMaterialMain"),
+      laserMaterialAlt: document.getElementById("laserMaterialAlt"),
+      laserSizeMain: document.getElementById("laserSizeMain"),
+      laserSizeAlt: document.getElementById("laserSizeAlt")
+    };
+
+    function showPanelsForType(fileType) {
+      if (fileType === "stl") {
+        ui.printSettingsPanel.classList.remove("hidden");
+        ui.laserSettingsPanel.classList.add("hidden");
+        ui.laserResults.classList.add("hidden");
+        return;
+      }
+
+      if (fileType === "svg" || fileType === "png") {
+        ui.printSettingsPanel.classList.add("hidden");
+        ui.printResults.classList.add("hidden");
+        ui.laserSettingsPanel.classList.remove("hidden");
+        return;
+      }
+
+      ui.printSettingsPanel.classList.remove("hidden");
+      ui.laserSettingsPanel.classList.add("hidden");
+      ui.printResults.classList.add("hidden");
+      ui.laserResults.classList.add("hidden");
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function formatNumber(value, digits = 2) {
+      return Number(value).toLocaleString(undefined, {
+        maximumFractionDigits: digits,
+        minimumFractionDigits: digits
+      });
+    }
+
+    function setStatus(message, kind) {
+      ui.status.textContent = message;
+      ui.status.classList.remove("ok", "warn");
+      if (kind === "ok") {
+        ui.status.classList.add("ok");
+      }
+      if (kind === "warn") {
+        ui.status.classList.add("warn");
+      }
+    }
+
+    function durationString(totalSeconds) {
+      const rounded = Math.max(0, Math.round(totalSeconds));
+      const hours = Math.floor(rounded / 3600);
+      const mins = Math.floor((rounded % 3600) / 60);
+      const secs = rounded % 60;
+      if (hours > 0) {
+        return hours + "h " + mins + "m";
+      }
+      if (mins > 0) {
+        return mins + "m " + secs + "s";
+      }
+      return secs + "s";
+    }
+
+    function metersString(lengthMm) {
+      return formatNumber(lengthMm / 1000, 2) + " m";
+    }
+
+    function parseNumberWithUnit(raw) {
+      if (raw == null) {
+        return null;
+      }
+
+      const text = String(raw).trim();
+      if (!text) {
+        return null;
+      }
+
+      const match = text.match(/^([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)([a-z%]*)$/i);
+      if (!match) {
+        return null;
+      }
+
+      return {
+        value: Number.parseFloat(match[1]),
+        unit: (match[2] || "").toLowerCase()
+      };
+    }
+
+    function convertLengthToMm(lengthToken, unitlessFallback) {
+      if (!lengthToken || !Number.isFinite(lengthToken.value)) {
+        return null;
+      }
+
+      const unit = lengthToken.unit || unitlessFallback;
+      const factor = SVG_UNIT_TO_MM[unit];
+      if (!factor) {
+        return null;
+      }
+
+      return lengthToken.value * factor;
+    }
+
+    function parseViewBox(viewBoxRaw) {
+      if (!viewBoxRaw) {
+        return null;
+      }
+
+      const values = String(viewBoxRaw)
+        .trim()
+        .split(/[\s,]+/)
+        .map((part) => Number.parseFloat(part));
+
+      if (values.length !== 4 || values.some((value) => !Number.isFinite(value))) {
+        return null;
+      }
+
+      return {
+        minX: values[0],
+        minY: values[1],
+        width: Math.abs(values[2]),
+        height: Math.abs(values[3])
+      };
+    }
+
+    function inferSvgMmPerUnit(svgBase, defaultUnit) {
+      const scales = [];
+      const viewBox = parseViewBox(svgBase.viewBoxRaw);
+      const widthMm = convertLengthToMm(parseNumberWithUnit(svgBase.widthRaw), "px");
+      const heightMm = convertLengthToMm(parseNumberWithUnit(svgBase.heightRaw), "px");
+
+      if (viewBox && viewBox.width > 0 && Number.isFinite(widthMm)) {
+        scales.push(widthMm / viewBox.width);
+      }
+
+      if (viewBox && viewBox.height > 0 && Number.isFinite(heightMm)) {
+        scales.push(heightMm / viewBox.height);
+      }
+
+      if (!scales.length && svgBase.bboxUnits.width > 0 && Number.isFinite(widthMm)) {
+        scales.push(widthMm / svgBase.bboxUnits.width);
+      }
+
+      if (!scales.length && svgBase.bboxUnits.height > 0 && Number.isFinite(heightMm)) {
+        scales.push(heightMm / svgBase.bboxUnits.height);
+      }
+
+      if (!scales.length) {
+        scales.push(SVG_UNIT_TO_MM[defaultUnit] || 1);
+      }
+
+      const average = scales.reduce((sum, value) => sum + value, 0) / scales.length;
+      return clamp(average, 1e-6, 1000000);
+    }
+
+    function convertSvgBaseToMm(svgBase, defaultUnit) {
+      const mmPerUnit = inferSvgMmPerUnit(svgBase, defaultUnit);
+      return {
+        totalLengthMm: svgBase.totalLengthUnits * mmPerUnit,
+        widthMm: svgBase.bboxUnits.width * mmPerUnit,
+        heightMm: svgBase.bboxUnits.height * mmPerUnit,
+        geometryCount: svgBase.geometryCount,
+        mmPerUnit
+      };
+    }
+
+    function luminance(r, g, b) {
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    }
+
+    function countMaskComponents(mask, width, height) {
+      const visited = new Uint8Array(mask.length);
+      const stack = [];
+      let components = 0;
+
+      for (let i = 0; i < mask.length; i += 1) {
+        if (!mask[i] || visited[i]) {
+          continue;
+        }
+
+        components += 1;
+        visited[i] = 1;
+        stack.push(i);
+
+        while (stack.length) {
+          const current = stack.pop();
+          const x = current % width;
+          const y = Math.floor(current / width);
+
+          const neighbors = [];
+          if (x > 0) neighbors.push(current - 1);
+          if (x < width - 1) neighbors.push(current + 1);
+          if (y > 0) neighbors.push(current - width);
+          if (y < height - 1) neighbors.push(current + width);
+
+          for (const next of neighbors) {
+            if (!visited[next] && mask[next]) {
+              visited[next] = 1;
+              stack.push(next);
+            }
+          }
+        }
+      }
+
+      return components;
+    }
+
+    async function parsePngFile(file, darkThreshold, dpi) {
+      const bitmap = await createImageBitmap(file);
+      const maxPixels = 4000000;
+
+      const originalWidth = bitmap.width;
+      const originalHeight = bitmap.height;
+
+      let scale = 1;
+      let width = originalWidth;
+      let height = originalHeight;
+
+      if (width * height > maxPixels) {
+        scale = Math.sqrt(maxPixels / (width * height));
+        width = Math.max(1, Math.round(width * scale));
+        height = Math.max(1, Math.round(height * scale));
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      context.drawImage(bitmap, 0, 0, width, height);
+      if (typeof bitmap.close === "function") {
+        bitmap.close();
+      }
+
+      const image = context.getImageData(0, 0, width, height);
+      const data = image.data;
+      const totalPixels = width * height;
+      const mask = new Uint8Array(totalPixels);
+
+      let darkPixels = 0;
+      let activePixels = 0;
+
+      for (let i = 0; i < totalPixels; i += 1) {
+        const offset = i * 4;
+        const alpha = data[offset + 3];
+        if (alpha < 20) {
+          continue;
+        }
+
+        const lightness = luminance(data[offset], data[offset + 1], data[offset + 2]);
+        if (lightness <= darkThreshold) {
+          darkPixels += 1;
+          mask[i] = 1;
+          activePixels += 1;
+        }
+      }
+
+      let usedAlphaFallback = false;
+      if (activePixels === 0) {
+        usedAlphaFallback = true;
+        for (let i = 0; i < totalPixels; i += 1) {
+          const offset = i * 4;
+          const alpha = data[offset + 3];
+          if (alpha >= 20) {
+            mask[i] = 1;
+            activePixels += 1;
+          }
+        }
+      }
+
+      let perimeterPx = 0;
+      for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+          const index = y * width + x;
+          if (!mask[index]) {
+            continue;
+          }
+
+          if (x === 0 || !mask[index - 1]) perimeterPx += 1;
+          if (x === width - 1 || !mask[index + 1]) perimeterPx += 1;
+          if (y === 0 || !mask[index - width]) perimeterPx += 1;
+          if (y === height - 1 || !mask[index + width]) perimeterPx += 1;
+        }
+      }
+
+      const components = activePixels > 0 ? countMaskComponents(mask, width, height) : 0;
+      const safeDpi = clamp(dpi, 20, 2400);
+      const mmPerPixel = (25.4 / safeDpi) / scale;
+
+      return {
+        kind: "png",
+        widthPx: width,
+        heightPx: height,
+        originalWidth,
+        originalHeight,
+        perimeterPx,
+        components,
+        darkFraction: darkPixels / totalPixels,
+        activeFraction: activePixels / totalPixels,
+        mmPerPixel,
+        usedAlphaFallback
+      };
+    }
+
+    function parseSvgText(svgText) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(svgText, "image/svg+xml");
+      const parseError = doc.querySelector("parsererror");
+      if (parseError) {
+        throw new Error("SVG parse failed.");
+      }
+
+      const svgRoot = doc.documentElement;
+      if (!svgRoot || svgRoot.nodeName.toLowerCase() !== "svg") {
+        throw new Error("File is not a valid SVG document.");
+      }
+
+      const sandbox = document.getElementById("svgMeasureSandbox");
+      sandbox.innerHTML = "";
+
+      const adopted = document.importNode(svgRoot, true);
+      sandbox.appendChild(adopted);
+
+      const geometry = adopted.querySelectorAll("path,line,polyline,polygon,rect,circle,ellipse");
+      let geometryCount = 0;
+      let totalLengthUnits = 0;
+
+      geometry.forEach((element) => {
+        if (typeof element.getTotalLength !== "function") {
+          return;
+        }
+
+        try {
+          const length = element.getTotalLength();
+          if (Number.isFinite(length) && length > 0) {
+            totalLengthUnits += length;
+          }
+          geometryCount += 1;
+        } catch (error) {
+          // Ignore malformed geometry elements and continue parsing.
+        }
+      });
+
+      if (geometryCount === 0 || totalLengthUnits === 0) {
+        sandbox.innerHTML = "";
+        throw new Error("SVG does not contain measurable geometry.");
+      }
+
+      let bbox = { width: 0, height: 0 };
+      try {
+        bbox = adopted.getBBox();
+      } catch (error) {
+        bbox = { width: 0, height: 0 };
+      }
+
+      sandbox.innerHTML = "";
+
+      return {
+        kind: "svg",
+        totalLengthUnits,
+        geometryCount,
+        bboxUnits: {
+          width: Math.max(0, bbox.width || 0),
+          height: Math.max(0, bbox.height || 0)
+        },
+        widthRaw: svgRoot.getAttribute("width"),
+        heightRaw: svgRoot.getAttribute("height"),
+        viewBoxRaw: svgRoot.getAttribute("viewBox")
+      };
+    }
+
+    function readPrintSettings() {
+      const values = {};
+      for (const id of printIds) {
+        const element = document.getElementById(id);
+        if (element.tagName === "SELECT") {
+          values[id] = element.value;
+        } else {
+          values[id] = Number.parseFloat(element.value);
+        }
+      }
+
+      return {
+        modelUnit: values.modelUnit,
+        infill: clamp((values.infillPct || 0) / 100, 0, 1),
+        layerHeight: clamp(values.layerHeight || 0.2, 0.05, 1),
+        printSpeed: clamp(values.printSpeed || 50, 5, 500),
+        lineWidth: clamp(values.lineWidth || 0.45, 0.2, 2),
+        wallLines: clamp(values.wallLines || 3, 1, 12),
+        topBottomLayers: clamp(values.topBottomLayers || 5, 1, 30),
+        support: clamp((values.supportPct || 0) / 100, 0, 2),
+        filamentDiameter: clamp(values.filamentDiameter || 1.75, 1, 3),
+        density: clamp(values.density || 1.24, 0.5, 3),
+        costKg: clamp(values.costKg || 0, 0, 400),
+        overhead: clamp(values.overheadPct || 0, 0, 400),
+        flowEfficiency: clamp(values.flowEfficiency || 0.82, 0.3, 1)
+      };
+    }
+
+    function readLaserSettings() {
+      return {
+        material: document.getElementById("laserMaterial").value,
+        thickness: clamp(Number.parseFloat(document.getElementById("laserThickness").value) || 3, 0.1, 40),
+        power: clamp(Number.parseFloat(document.getElementById("laserPower").value) || 40, 5, 300),
+        baseCutSpeed: clamp(Number.parseFloat(document.getElementById("baseCutSpeed").value) || 8, 0.5, 250),
+        passes: clamp(Math.round(Number.parseFloat(document.getElementById("laserPasses").value) || 1), 1, 20),
+        startDelay: clamp(Number.parseFloat(document.getElementById("laserStartDelay").value) || 0.35, 0, 5),
+        overhead: clamp(Number.parseFloat(document.getElementById("laserOverheadPct").value) || 0, 0, 300),
+        kerf: clamp(Number.parseFloat(document.getElementById("laserKerf").value) || 0.15, 0.01, 2),
+        hourlyCost: clamp(Number.parseFloat(document.getElementById("laserHourlyCost").value) || 0, 0, 500),
+        svgDefaultUnit: document.getElementById("svgDefaultUnit").value,
+        pngMode: document.getElementById("pngMode").value,
+        pngDpi: clamp(Number.parseFloat(document.getElementById("pngDpi").value) || 300, 20, 2400),
+        pngDarkThreshold: clamp(Number.parseFloat(document.getElementById("pngDarkThreshold").value) || 220, 0, 255),
+        engraveSpeed: clamp(Number.parseFloat(document.getElementById("engraveSpeed").value) || 180, 10, 3000)
+      };
+    }
+
+    function dot(a, b) {
+      return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    }
+
+    function cross(a, b) {
+      return [
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0]
+      ];
+    }
+
+    function tetraVolume(v0, v1, v2) {
+      return dot(v0, cross(v1, v2)) / 6;
+    }
+
+    function updateBounds(bounds, x, y, z) {
+      if (x < bounds.minX) bounds.minX = x;
+      if (y < bounds.minY) bounds.minY = y;
+      if (z < bounds.minZ) bounds.minZ = z;
+      if (x > bounds.maxX) bounds.maxX = x;
+      if (y > bounds.maxY) bounds.maxY = y;
+      if (z > bounds.maxZ) bounds.maxZ = z;
+    }
+
+    function detectBinarySTL(buffer) {
+      if (buffer.byteLength < 84) {
+        return false;
+      }
+
+      const view = new DataView(buffer);
+      const triCount = view.getUint32(80, true);
+      const expectedBytes = 84 + triCount * 50;
+
+      if (expectedBytes === buffer.byteLength) {
+        return true;
+      }
+
+      const headerBytes = new Uint8Array(buffer.slice(0, 80));
+      let likelyAscii = true;
+      for (const byte of headerBytes) {
+        const printable = byte === 9 || byte === 10 || byte === 13 || (byte >= 32 && byte <= 126);
+        if (!printable) {
+          likelyAscii = false;
+          break;
+        }
+      }
+
+      if (!likelyAscii) {
+        return true;
+      }
+
+      const headerText = new TextDecoder().decode(headerBytes).trim().toLowerCase();
+      if (!headerText.startsWith("solid")) {
+        return true;
+      }
+
+      return false;
+    }
+
+    function parseBinarySTL(buffer) {
+      const view = new DataView(buffer);
+      const triangleCount = view.getUint32(80, true);
+
+      if (84 + triangleCount * 50 > buffer.byteLength) {
+        throw new Error("Binary STL appears truncated or malformed.");
+      }
+
+      const bounds = {
+        minX: Infinity,
+        minY: Infinity,
+        minZ: Infinity,
+        maxX: -Infinity,
+        maxY: -Infinity,
+        maxZ: -Infinity
+      };
+
+      let signedVolume = 0;
+      let offset = 84;
+
+      for (let i = 0; i < triangleCount; i += 1) {
+        offset += 12; // Skip normal vector.
+
+        const v0 = [
+          view.getFloat32(offset, true),
+          view.getFloat32(offset + 4, true),
+          view.getFloat32(offset + 8, true)
+        ];
+        offset += 12;
+
+        const v1 = [
+          view.getFloat32(offset, true),
+          view.getFloat32(offset + 4, true),
+          view.getFloat32(offset + 8, true)
+        ];
+        offset += 12;
+
+        const v2 = [
+          view.getFloat32(offset, true),
+          view.getFloat32(offset + 4, true),
+          view.getFloat32(offset + 8, true)
+        ];
+        offset += 12;
+
+        signedVolume += tetraVolume(v0, v1, v2);
+
+        updateBounds(bounds, v0[0], v0[1], v0[2]);
+        updateBounds(bounds, v1[0], v1[1], v1[2]);
+        updateBounds(bounds, v2[0], v2[1], v2[2]);
+
+        offset += 2; // Skip attribute byte count.
+      }
+
+      return {
+        triangleCount,
+        signedVolumeRaw: signedVolume,
+        boundsRaw: bounds
+      };
+    }
+
+    function parseAsciiSTL(buffer) {
+      const text = new TextDecoder().decode(buffer);
+      const vertexRegex = /vertex\s+([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)\s+([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)\s+([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)/g;
+
+      const numbers = [];
+      let match;
+      while ((match = vertexRegex.exec(text)) !== null) {
+        numbers.push(Number.parseFloat(match[1]));
+        numbers.push(Number.parseFloat(match[2]));
+        numbers.push(Number.parseFloat(match[3]));
+      }
+
+      if (numbers.length < 9 || numbers.length % 9 !== 0) {
+        throw new Error("ASCII STL parse failed. Could not find complete triangle vertex data.");
+      }
+
+      const bounds = {
+        minX: Infinity,
+        minY: Infinity,
+        minZ: Infinity,
+        maxX: -Infinity,
+        maxY: -Infinity,
+        maxZ: -Infinity
+      };
+
+      let signedVolume = 0;
+      const triangleCount = numbers.length / 9;
+
+      for (let i = 0; i < numbers.length; i += 9) {
+        const v0 = [numbers[i], numbers[i + 1], numbers[i + 2]];
+        const v1 = [numbers[i + 3], numbers[i + 4], numbers[i + 5]];
+        const v2 = [numbers[i + 6], numbers[i + 7], numbers[i + 8]];
+
+        signedVolume += tetraVolume(v0, v1, v2);
+
+        updateBounds(bounds, v0[0], v0[1], v0[2]);
+        updateBounds(bounds, v1[0], v1[1], v1[2]);
+        updateBounds(bounds, v2[0], v2[1], v2[2]);
+      }
+
+      return {
+        triangleCount,
+        signedVolumeRaw: signedVolume,
+        boundsRaw: bounds
+      };
+    }
+
+    function parseSTL(buffer) {
+      if (detectBinarySTL(buffer)) {
+        return parseBinarySTL(buffer);
+      }
+      return parseAsciiSTL(buffer);
+    }
+
+    function convertMeshToMillimeters(meshRaw, modelUnit) {
+      const scale = UNIT_TO_MM[modelUnit] || 1;
+      const scale3 = scale * scale * scale;
+      const bounds = meshRaw.boundsRaw;
+
+      return {
+        triangleCount: meshRaw.triangleCount,
+        volumeMm3: Math.abs(meshRaw.signedVolumeRaw) * scale3,
+        sizeMm: {
+          x: Math.max(0, (bounds.maxX - bounds.minX) * scale),
+          y: Math.max(0, (bounds.maxY - bounds.minY) * scale),
+          z: Math.max(0, (bounds.maxZ - bounds.minZ) * scale)
+        }
+      };
+    }
+
+    function estimatePrint(meshMm, settings) {
+      const minSize = Math.max(Math.min(meshMm.sizeMm.x, meshMm.sizeMm.y, meshMm.sizeMm.z), 0.1);
+      const shellThickness = settings.wallLines * settings.lineWidth;
+      const topBottomThickness = 2 * settings.topBottomLayers * settings.layerHeight;
+
+      const shellFraction = clamp((2 * shellThickness) / minSize, 0.02, 0.75);
+      const topBottomFraction = clamp(topBottomThickness / Math.max(meshMm.sizeMm.z, 0.1), 0.01, 0.55);
+      const denseFraction = clamp(shellFraction + topBottomFraction, 0.05, 0.92);
+
+      const effectiveSolidFraction = clamp(settings.infill + (1 - settings.infill) * denseFraction, 0.03, 1);
+      let printedVolumeMm3 = meshMm.volumeMm3 * effectiveSolidFraction;
+      printedVolumeMm3 *= 1 + settings.support;
+
+      const filamentArea = Math.PI * Math.pow(settings.filamentDiameter / 2, 2);
+      const filamentLengthMm = printedVolumeMm3 / filamentArea;
+
+      const materialCm3 = printedVolumeMm3 / 1000;
+      const massG = materialCm3 * settings.density;
+      const cost = (massG / 1000) * settings.costKg;
+
+      const volumetricRate = Math.max(
+        settings.printSpeed * settings.layerHeight * settings.lineWidth * settings.flowEfficiency,
+        0.1
+      );
+
+      const printSeconds = (printedVolumeMm3 / volumetricRate) * (1 + settings.overhead / 100);
+
+      return {
+        modelVolumeMm3: meshMm.volumeMm3,
+        printedVolumeMm3,
+        filamentLengthMm,
+        massG,
+        cost,
+        printSeconds,
+        triangleCount: meshMm.triangleCount,
+        sizeMm: meshMm.sizeMm,
+        effectiveSolidFraction
+      };
+    }
+
+    function estimateLaserCutSpeed(settings) {
+      const materialFactor = LASER_MATERIAL_FACTOR[settings.material] || 1;
+      const thicknessFactor = Math.pow(3 / settings.thickness, 1.08);
+      const powerFactor = Math.pow(settings.power / 40, 0.88);
+      const speed = settings.baseCutSpeed * materialFactor * thicknessFactor * powerFactor;
+      return clamp(speed, 0.3, 650);
+    }
+
+    function estimateLaserFromSvg(svgMm, settings) {
+      const cutSpeed = estimateLaserCutSpeed(settings);
+      const baseCutSeconds = svgMm.totalLengthMm / cutSpeed;
+      const repeatedCut = baseCutSeconds * settings.passes;
+      const pathDelays = svgMm.geometryCount * settings.startDelay * settings.passes;
+      const totalSeconds = repeatedCut * (1 + settings.overhead / 100) + pathDelays;
+
+      const removedMm3 = svgMm.totalLengthMm * settings.kerf * settings.thickness;
+      const machineCost = (totalSeconds / 3600) * settings.hourlyCost;
+
+      return {
+        mode: "cut",
+        label: "SVG Vector Cut",
+        details: svgMm.geometryCount.toLocaleString() + " vector entities",
+        lengthMm: svgMm.totalLengthMm,
+        totalSeconds,
+        effectiveSpeed: cutSpeed,
+        widthMm: svgMm.widthMm,
+        heightMm: svgMm.heightMm,
+        countValue: svgMm.geometryCount,
+        removedMm3,
+        darkCoverage: null,
+        machineCost
+      };
+    }
+
+    function estimateLaserFromPng(pngRaw, settings) {
+      const widthMm = pngRaw.widthPx * pngRaw.mmPerPixel;
+      const heightMm = pngRaw.heightPx * pngRaw.mmPerPixel;
+
+      if (settings.pngMode === "engrave") {
+        const coverageFactor = clamp(0.35 + 0.65 * pngRaw.darkFraction, 0.08, 1);
+        const sweepLengthMm = widthMm * pngRaw.heightPx;
+        const estimatedLengthMm = sweepLengthMm * coverageFactor;
+        const engraveSpeed = clamp(settings.engraveSpeed * Math.pow(settings.power / 40, 0.2), 10, 3500);
+
+        const baseSeconds = estimatedLengthMm / engraveSpeed;
+        const turnAroundSeconds = pngRaw.heightPx * 0.002;
+        const totalSeconds = (baseSeconds + turnAroundSeconds) * settings.passes * (1 + settings.overhead / 100);
+        const machineCost = (totalSeconds / 3600) * settings.hourlyCost;
+
+        return {
+          mode: "engrave",
+          label: "PNG Raster Engrave",
+          details: formatNumber(pngRaw.darkFraction * 100, 1) + "% dark coverage",
+          lengthMm: estimatedLengthMm,
+          totalSeconds,
+          effectiveSpeed: engraveSpeed,
+          widthMm,
+          heightMm,
+          countValue: pngRaw.heightPx,
+          removedMm3: 0,
+          darkCoverage: pngRaw.darkFraction,
+          machineCost
+        };
+      }
+
+      const cutSpeed = estimateLaserCutSpeed(settings);
+      const perimeterLengthMm = pngRaw.perimeterPx * pngRaw.mmPerPixel;
+      const pathCount = Math.max(1, pngRaw.components);
+
+      const baseCutSeconds = perimeterLengthMm / cutSpeed;
+      const repeatedCut = baseCutSeconds * settings.passes;
+      const pathDelays = pathCount * settings.startDelay * settings.passes;
+      const totalSeconds = repeatedCut * (1 + settings.overhead / 100) + pathDelays;
+
+      const removedMm3 = perimeterLengthMm * settings.kerf * settings.thickness;
+      const machineCost = (totalSeconds / 3600) * settings.hourlyCost;
+
+      return {
+        mode: "cut",
+        label: "PNG Trace Cut",
+        details: pathCount.toLocaleString() + " traced components",
+        lengthMm: perimeterLengthMm,
+        totalSeconds,
+        effectiveSpeed: cutSpeed,
+        widthMm,
+        heightMm,
+        countValue: pathCount,
+        removedMm3,
+        darkCoverage: pngRaw.darkFraction,
+        machineCost
+      };
+    }
+
+    function renderEstimate(data) {
+      const volumeCm3 = data.modelVolumeMm3 / 1000;
+      const volumeIn3 = data.modelVolumeMm3 / 16387.064;
+      ui.volumeMain.textContent = formatNumber(data.modelVolumeMm3, 2) + " mm3";
+      ui.volumeAlt.textContent = formatNumber(volumeCm3, 2) + " cm3 | " + formatNumber(volumeIn3, 3) + " in3";
+
+      ui.materialMain.textContent = formatNumber(data.massG, 1) + " g";
+      ui.materialAlt.textContent = formatNumber(data.printedVolumeMm3 / 1000, 2) + " cm3 estimated extruded volume";
+
+      ui.filamentMain.textContent = metersString(data.filamentLengthMm);
+      ui.filamentAlt.textContent = formatNumber(data.filamentLengthMm, 0) + " mm filament";
+
+      ui.timeMain.textContent = durationString(data.printSeconds);
+      ui.timeAlt.textContent = "includes overhead factor";
+
+      ui.costMain.textContent = "$" + formatNumber(data.cost, 2);
+      ui.costAlt.textContent = "based on filament price per kg";
+
+      ui.sizeMain.textContent =
+        formatNumber(data.sizeMm.x, 1) + " x " + formatNumber(data.sizeMm.y, 1) + " x " + formatNumber(data.sizeMm.z, 1) + " mm";
+      ui.sizeAlt.textContent = data.triangleCount.toLocaleString() + " triangles";
+
+      ui.printResults.classList.remove("hidden");
+    }
+
+    function renderLaserEstimate(data) {
+      ui.laserTypeMain.textContent = data.label;
+      ui.laserTypeAlt.textContent = data.details;
+
+      ui.laserLengthMain.textContent = metersString(data.lengthMm);
+      ui.laserLengthAlt.textContent = formatNumber(data.lengthMm, 0) + " mm estimated path length";
+
+      ui.laserTimeMain.textContent = durationString(data.totalSeconds);
+      ui.laserTimeAlt.textContent = "passes and machine overhead included";
+
+      ui.laserSpeedMain.textContent = formatNumber(data.effectiveSpeed, 1) + " mm/s";
+      ui.laserSpeedAlt.textContent = "effective speed from material, thickness, and power";
+
+      if (data.mode === "cut") {
+        ui.laserMaterialMain.textContent = formatNumber(data.removedMm3 / 1000, 2) + " cm3";
+        ui.laserMaterialAlt.textContent = "approximate removed kerf volume";
+      } else {
+        ui.laserMaterialMain.textContent = formatNumber((data.darkCoverage || 0) * 100, 1) + "%";
+        ui.laserMaterialAlt.textContent = "dark pixel coverage used for raster estimate";
+      }
+
+      ui.laserSizeMain.textContent =
+        formatNumber(data.widthMm, 1) + " x " + formatNumber(data.heightMm, 1) + " mm";
+      ui.laserSizeAlt.textContent =
+        data.countValue.toLocaleString() + " paths/scanlines | $" + formatNumber(data.machineCost, 2) + " machine time";
+
+      ui.laserResults.classList.remove("hidden");
+    }
+
+    async function recompute() {
+      const token = ++state.recomputeToken;
+
+      if (!state.fileType) {
+        return;
+      }
+
+      if (state.fileType === "stl") {
+        if (!state.meshRaw) {
+          return;
+        }
+
+        const settings = readPrintSettings();
+        const meshMm = convertMeshToMillimeters(state.meshRaw, settings.modelUnit);
+        const estimate = estimatePrint(meshMm, settings);
+
+        if (token !== state.recomputeToken) {
+          return;
+        }
+
+        renderEstimate(estimate);
+
+        const solidPercent = formatNumber(estimate.effectiveSolidFraction * 100, 1);
+        setStatus("3D print estimate updated. Effective material fill: " + solidPercent + "%.", "ok");
+
+        ui.fileInfo.classList.remove("hidden");
+        ui.fileInfo.textContent =
+          "File: " + state.fileName +
+          " | Triangles: " + estimate.triangleCount.toLocaleString() +
+          " | Bounding box: " +
+          formatNumber(estimate.sizeMm.x, 2) + " x " +
+          formatNumber(estimate.sizeMm.y, 2) + " x " +
+          formatNumber(estimate.sizeMm.z, 2) + " mm";
+        return;
+      }
+
+      if (state.fileType === "svg") {
+        if (!state.laserRaw) {
+          return;
+        }
+
+        const laserSettings = readLaserSettings();
+        const svgMm = convertSvgBaseToMm(state.laserRaw, laserSettings.svgDefaultUnit);
+        const estimate = estimateLaserFromSvg(svgMm, laserSettings);
+
+        if (token !== state.recomputeToken) {
+          return;
+        }
+
+        renderLaserEstimate(estimate);
+        setStatus("Laser estimate updated from SVG vector paths.", "ok");
+
+        ui.fileInfo.classList.remove("hidden");
+        ui.fileInfo.textContent =
+          "File: " + state.fileName +
+          " | Entities: " + estimate.countValue.toLocaleString() +
+          " | Work area: " +
+          formatNumber(estimate.widthMm, 2) + " x " +
+          formatNumber(estimate.heightMm, 2) + " mm";
+        return;
+      }
+
+      if (state.fileType === "png") {
+        if (!state.sourceFile) {
+          return;
+        }
+
+        const laserSettings = readLaserSettings();
+        const cacheKey =
+          state.sourceFile.name + "|" +
+          state.sourceFile.size + "|" +
+          laserSettings.pngDpi + "|" +
+          laserSettings.pngDarkThreshold;
+
+        if (state.pngCacheKey !== cacheKey) {
+          setStatus("Analyzing PNG pixels...", "");
+          const pngRaw = await parsePngFile(state.sourceFile, laserSettings.pngDarkThreshold, laserSettings.pngDpi);
+          if (token !== state.recomputeToken) {
+            return;
+          }
+          state.laserRaw = pngRaw;
+          state.pngCacheKey = cacheKey;
+        }
+
+        const estimate = estimateLaserFromPng(state.laserRaw, laserSettings);
+        if (token !== state.recomputeToken) {
+          return;
+        }
+
+        renderLaserEstimate(estimate);
+
+        const coverage = formatNumber((state.laserRaw.darkFraction || 0) * 100, 1);
+        const fallbackNote = state.laserRaw.usedAlphaFallback ? " Alpha fallback used." : "";
+        setStatus("Laser estimate updated from PNG analysis. Dark coverage: " + coverage + "%." + fallbackNote, "ok");
+
+        ui.fileInfo.classList.remove("hidden");
+        ui.fileInfo.textContent =
+          "File: " + state.fileName +
+          " | Image: " + state.laserRaw.originalWidth + " x " + state.laserRaw.originalHeight + " px" +
+          " | Components: " + state.laserRaw.components.toLocaleString();
+      }
+    }
+
+    async function handleFile(file) {
+      try {
+        state.fileName = file.name;
+        state.sourceFile = file;
+        state.meshRaw = null;
+        state.laserRaw = null;
+        state.pngCacheKey = "";
+
+        const lowerName = file.name.toLowerCase();
+
+        if (lowerName.endsWith(".stl")) {
+          showPanelsForType("stl");
+          state.fileType = "stl";
+          setStatus("Reading STL...", "");
+          const buffer = await file.arrayBuffer();
+          state.meshRaw = parseSTL(buffer);
+          await recompute();
+          return;
+        }
+
+        if (lowerName.endsWith(".svg")) {
+          showPanelsForType("svg");
+          state.fileType = "svg";
+          setStatus("Reading SVG...", "");
+          const svgText = await file.text();
+          state.laserRaw = parseSvgText(svgText);
+          await recompute();
+          return;
+        }
+
+        if (lowerName.endsWith(".png")) {
+          showPanelsForType("png");
+          state.fileType = "png";
+          setStatus("Reading PNG...", "");
+          await recompute();
+          return;
+        }
+
+        showPanelsForType(null);
+        state.fileType = null;
+        setStatus("Unsupported file type. Upload STL, SVG, or PNG.", "warn");
+      } catch (error) {
+        console.error(error);
+        setStatus("Could not parse this file. Verify STL/SVG/PNG format and try again.", "warn");
+      }
+    }
+
+    ui.uploadZone.addEventListener("click", () => {
+      ui.fileInput.click();
+    });
+
+    ui.uploadZone.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        ui.fileInput.click();
+      }
+    });
+
+    ui.fileInput.addEventListener("change", () => {
+      const file = ui.fileInput.files && ui.fileInput.files[0];
+      if (!file) {
+        return;
+      }
+      handleFile(file);
+    });
+
+    ui.uploadZone.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      ui.uploadZone.classList.add("drag");
+    });
+
+    ui.uploadZone.addEventListener("dragleave", () => {
+      ui.uploadZone.classList.remove("drag");
+    });
+
+    ui.uploadZone.addEventListener("drop", (event) => {
+      event.preventDefault();
+      ui.uploadZone.classList.remove("drag");
+      const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+      if (!file) {
+        return;
+      }
+      if (!file.name.toLowerCase().endsWith(".stl")) {
+        const lowerName = file.name.toLowerCase();
+        if (!lowerName.endsWith(".svg") && !lowerName.endsWith(".png")) {
+          setStatus("Please upload a .stl, .svg, or .png file.", "warn");
+          return;
+        }
+      }
+      handleFile(file);
+    });
+
+    printIds.forEach((id) => {
+      const element = document.getElementById(id);
+      element.addEventListener("input", () => {
+        recompute();
+      });
+      element.addEventListener("change", () => {
+        recompute();
+      });
+    });
+
+    laserIds.forEach((id) => {
+      const element = document.getElementById(id);
+      element.addEventListener("input", () => {
+        recompute();
+      });
+      element.addEventListener("change", () => {
+        recompute();
+      });
+    });
+
+    showPanelsForType(null);
+  </script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CRADS 360° SMD - Projects - Samson Galvin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+        .project-hero{background-color:#111827;border-radius:14px;padding:30px;box-shadow:0 4px 12px rgba(0,0,0,0.3);margin-bottom:40px}
+        .project-meta{color:#10b981;font-weight:bold;margin-bottom:8px}
+        h2,h3{color:#10b981;margin-bottom:12px}
+        p{line-height:1.6;margin-bottom:16px;color:#d1d5db}
+        ul.features{list-style:none;padding-left:0;margin-bottom:24px}
+        ul.features li{margin-bottom:8px;position:relative;padding-left:20px}
+        ul.features li::before{content:'✔';position:absolute;left:0;color:#10b981;font-weight:bold}
+        .image-placeholder{width:100%;height:200px;background-color:#374151;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#9ca3af;margin-bottom:16px;font-size:1rem}
+        .project-hero-img{width:50%;max-width:600px;display:block;margin:16px auto;border-radius:10px;object-fit:cover}
+    </style>
+</head>
+<body class="has-sidebar">
+<header class="site-header">
+    <div class="site-header-inner">
+        <div class="site-header-top">
+            <a class="logo-link" href="../index.html" aria-label="Home">
+                <img src="../assets/images/logo.png" alt="Logo" class="logo">
+            </a>
+            <a class="site-home-link" href="../index.html">Main Page</a>
+        </div>
+        <div class="site-header-bottom">
+            <div class="site-header-left">
+                <div class="header-title">Engineering Portfolio</div>
+                <nav class="primary-nav" aria-label="Engineering Portfolio">
+                    <a href="../portfolio.html">Home</a>
+                    <a href="../about.html">About Me</a>
+                    <a href="../work.html">Work Experience</a>
+                    <a href="../projects.html">Projects</a>
+                </nav>
+            </div>
+
+            <div class="site-header-right">
+                <div class="header-title">Fabrication &amp; Product Development Services</div>
+                <nav class="service-nav" aria-label="Fabrication Services">
+                    <a href="../fabrication.html">Home</a>
+                    <a href="../lab-3d-printing.html">3D Printing</a>
+                    <a href="../lab-laser-engraving.html">Laser Engraving</a>
+                    <a href="../lab-product-development.html">Product Development</a>
+                </nav>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="container">
+    <aside class="side-panel">
+        <h3>Projects</h3>
+        <ul>
+            <li><a href="../projects.html">Project Summary</a></li>
+            <li><a href="crads.html" class="active">CRADS 360° SMD</a></li>
+            <li><a href="hex-meshing.html">Hex Dominant Meshing Tool</a></li>
+            <li><a href="hex-spinners.html">Hex Spinners</a></li>
+            <li><a href="milo.html">MILO</a></li>
+            <li><a href="sifm.html">SIFM</a></li>
+        </ul>
+    </aside>
+
+    <main class="main-content">
+        <div class="project-hero">
+            <div class="project-meta">Project started in 2024</div>
+            <h2>CRADS 360° SMD</h2>
+            <img src="../assets/images/crads1.png" alt="CRADS 360° SMD Hero Image" class="project-hero-img">
+            <p>The Continuous Rotation Angle Detection Sensor (CRADS) is a type of potentiometer I created that is capable of continuous rotation with no dead zones.<br><br>
+            I was building a robotic arm that required many sensors with continuous rotation, absolute position, and low cost. 
+            Existing options like Hall effect rotational encoders or optical encoders could have worked, but with the quantity needed, they were not cost effective. 
+            To address this, I engineered the CRADS sensor as a practical, affordable alternative and personally authored the patent application, 
+            with legal guidance from a patent attorney.</p>
+
+        </div>
+
+        <h3>Key Features</h3>
+        <ul class="features">
+            <li>Continuous 0–360° rotation in both directions</li>
+            <li>Redundant signal combination reduces measurement error</li>
+            <li>Compact and cost-effective design</li>
+            <li>Compatible with Arduino and other microcontrollers</li>
+            <li>Multiple embodiments: single sweeper and dual sweeper</li>
+        </ul>
+
+        <h3>Patent Application</h3>
+        <div style="background:#fff; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.10); padding:12px; margin-bottom:24px;">
+        <embed src="../assets/images/crads4.pdf" type="application/pdf" width="100%" height="600px" style="border-radius:8px;">
+        <p style="color:#d1d5db;">If the PDF does not display, <a href="../assets/crads-patent.pdf" target="_blank" style="color:#10b981;">click here to download.</a></p>
+        </div>
+
+    </main>
+</div>
+
+<footer>
+    <p>&copy; 2025 Samson Galvin</p>
+</footer>
+<script src="../assets/js/layout.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hex Dominant Meshing Tool - Projects - Samson Galvin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+        .project-hero{background-color:#111827;border-radius:14px;padding:30px;box-shadow:0 4px 12px rgba(0,0,0,0.3);margin-bottom:40px}
+        .project-meta{color:#10b981;font-weight:bold;margin-bottom:8px}
+        h2,h3{color:#10b981;margin-bottom:12px}
+        p{line-height:1.6;margin-bottom:16px;color:#d1d5db}
+        ul.features{list-style:none;padding-left:0;margin-bottom:24px}
+        ul.features li{margin-bottom:8px;position:relative;padding-left:20px}
+        ul.features li::before{content:'✔';position:absolute;left:0;color:#10b981;font-weight:bold}
+        .image-placeholder{width:100%;height:200px;background-color:#374151;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#9ca3af;margin-bottom:16px;font-size:1rem}
+        .project-hero-img{width:30%;max-width:300px;display:block;margin:16px auto;border-radius:10px;object-fit:cover}
+        video{border-radius:10px;}
+    </style>
+</head>
+<body class="has-sidebar">
+<header class="site-header">
+    <div class="site-header-inner">
+        <div class="site-header-top">
+            <a class="logo-link" href="../index.html" aria-label="Home">
+                <img src="../assets/images/logo.png" alt="Logo" class="logo">
+            </a>
+            <a class="site-home-link" href="../index.html">Main Page</a>
+        </div>
+        <div class="site-header-bottom">
+            <div class="site-header-left">
+                <div class="header-title">Engineering Portfolio</div>
+                <nav class="primary-nav" aria-label="Engineering Portfolio">
+                    <a href="../portfolio.html">Home</a>
+                    <a href="../about.html">About Me</a>
+                    <a href="../work.html">Work Experience</a>
+                    <a href="../projects.html">Projects</a>
+                </nav>
+            </div>
+
+            <div class="site-header-right">
+                <div class="header-title">Fabrication &amp; Product Development Services</div>
+                <nav class="service-nav" aria-label="Fabrication Services">
+                    <a href="../fabrication.html">Home</a>
+                    <a href="../lab-3d-printing.html">3D Printing</a>
+                    <a href="../lab-laser-engraving.html">Laser Engraving</a>
+                    <a href="../lab-product-development.html">Product Development</a>
+                </nav>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="container">
+    <aside class="side-panel">
+        <h3>Projects</h3>
+        <ul>
+            <li><a href="../projects.html">Project Summary</a></li>
+            <li><a href="crads.html">CRADS 360° SMD</a></li>
+            <li><a href="hex-meshing.html" class="active">Hex Dominant Meshing Tool</a></li>
+            <li><a href="hex-spinners.html">Hex Spinners</a></li>
+            <li><a href="milo.html">MILO</a></li>
+            <li><a href="sifm.html">SIFM</a></li>
+        </ul>
+    </aside>
+
+    <main class="main-content">
+        <div class="project-hero">
+            <div class="project-meta">Project started in 2023</div>
+            <h2>Hex Dominant Meshing Tool</h2>
+            <img src="../assets/images/hand_gif.gif" alt="Hex Dominant Meshing Tool Hero Image" class="project-hero-img">
+            <p>The Hex Dominant Meshing Tool is custom software I developed to generate hexahedral-dominant finite element meshes from both STEP and STL/OBJ files. 
+            I created it after encountering limitations with existing free tools like GMSH and NETGEN, which often struggled with more complex geometries featuring fillets or intricate details. 
+            I also enjoyed the challenge of producing meshes primarily composed of hex elements, which offer significant advantages over tetrahedral meshes in terms of accuracy, convergence, and simulation quality.</p>
+            <br><br>
+            <p>This is still a work in progress. I finished version 2 which addresses several issues in version 1 but there are many improvements I still need to work on.</p>
+        </div>
+
+        <h3>Key Features</h3>
+        <ul class="features">
+            <li>Generates hex-dominant meshes for complex CAD models</li>
+            <li>Improves accuracy and convergence for FE simulations</li>
+            <li>Customizable meshing parameters</li>
+            <li>Python/GUI-based implementation for ease of use</li>
+            <li>Supports export to standard FE solver formats</li>
+        </ul>
+
+        <!-- Version 1 Tutorial Box -->
+        <div style="background:#232b36; border-radius:12px; box-shadow:0 2px 12px rgba(0,0,0,0.13); padding:28px 24px 24px 24px; margin-bottom:32px;">
+            <h3 style="color:#10b981; margin-top:0;">Tutorial for Meshing Tool (Version 1)</h3>
+            <p>
+            This tutorial provides an overview of version 1 of the Hex Dominant Meshing Tool, highlighting its workflow, key features, 
+            and example meshes. While functional, this version had several limitations that have been addressed in the updated release. 
+            Notably, some hex elements exhibited poor quality, including skewed volumes, unfavorable aspect ratios, and warpage. In the new version, 
+            these elements are automatically converted to tetrahedra if necessary to ensure mesh integrity. Additionally, version 1 did not optimize the mesh 
+            by combining elements into larger hex blocks where possible, a capability now included to reduce overall element count and improve simulation efficiency.
+            </p>
+            <br><br>
+            <p>Click on the video below to see the tutorial in action.</p>
+            <div style="margin-bottom:24px; text-align:center;">
+                <video width="100%" max-width="800px" controls>
+                    <source src="../assets/images/hd2.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+                 <p style="color:#d1d5db; margin-bottom:32px;">If the video does not display, <a href="https://youtu.be/m4rkAV2_0qo?si=U5adpki9NIGCQEZA" target="_blank" style="color:#10b981;">click here to watch on YouTube.</a></p>
+            </div>
+            </div>
+           
+
+        <!-- Version 2 Box -->
+        <div style="background:#232b36; border-radius:12px; box-shadow:0 2px 12px rgba(0,0,0,0.13); padding:28px 24px 24px 24px; margin-bottom:32px;">
+            <h3 style="color:#10b981; margin-top:0;">Meshing Tool Version 2</h3>
+            <p>
+            Version 2 introduces several improvements over version 1, including better avoidance of bad hex elements, automated element combination to reduce element count, 
+            </p>
+            <div style="margin:24px 0; text-align:center;">
+                <img src="../assets/images/hd1.png" alt="Hex Meshing Tool Version 2 Example" style="width:90%; max-width:1000px; border-radius:10px;">
+            </div>
+            <h4 style="color:#10b981; margin-top:0;">PDF Overview</h4>
+            <p>
+            Version 2 introduces several improvements over version 1, including better avoidance of bad hex elements, automated element combination to reduce element count, 
+            automatic suggested element min size, and a report after meshing to show mesh quality metrics.
+            </p>
+            <div style="background:#fff; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.10); padding:12px; margin-bottom:24px;">
+                <embed src="../assets/images/Hex-Dominant Voxelization Study.pdf" type="application/pdf" width="100%" height="500px" style="border-radius:8px;">
+                <p style="color:#d1d5db;">If the PDF does not display, <a href="../assets/images/Hex-Dominant Voxelization Study.pdf" target="_blank" style="color:#10b981;">click here to download.</a></p>
+            </div>
+        </div>
+
+
+        <h3>Additional Resources</h3>
+        <p>Source code, tutorial videos, and example meshes available for download upon request.</p>
+    </main>
+</div>
+
+<footer>
+    <p>&copy; 2025 Samson Galvin</p>
+</footer>
+
+<script src="../assets/js/layout.js" defer></script>
+</body>
+</html>

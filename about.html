@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>About Me - Samson Galvin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #1f2933;
+            color: #e5e7eb;
+        }
+
+        /* HEADER WITH LOGO AND NAVIGATION */
+        header {
+            text-align: center;
+            background-color: #111827;
+            padding: 20px 0;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .header-container img.logo {
+            height: 50px;
+            width: auto;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2rem;
+            color: #ffffff;
+        }
+
+        nav a {
+            margin: 0 15px;
+            color: #10b981;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        nav a.active {
+            color: #ffffff;
+            font-weight: bold;
+            border-bottom: 2px solid #10b981;
+        }
+
+        .fab-link {
+            color: #e5e7eb;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .fab-link:hover {
+            color: #ffffff;
+            text-decoration: underline;
+        }
+
+        .fab-row {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        /* HERO SECTION */
+        .hero {
+            padding: 12px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            gap: 12px;
+            margin: 12px auto;
+        }
+
+        .hero-content {
+            background: none;
+            padding: 0 10px;
+            border-radius: 0;
+            text-align: center;
+            max-width: 720px;
+        }
+
+        .hero-content h2 {
+            font-size: 2.2rem;
+            margin-bottom: 8px;
+        }
+
+        .hero-content p {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin: 0;
+        }
+
+        @media (max-width: 800px) {
+            .hero {
+                padding: 16px 10px;
+            }
+            .hero-content {
+                padding: 0;
+            }
+            .profile-large {
+            width: clamp(700px, 70vw, 1200px);
+            max-width: 80%;
+            height: auto;
+            border-radius: 14px;
+            margin: 0 auto 10px auto;
+            object-fit: cover;
+            }
+        }
+
+        /* SECTION STYLING */
+        section {
+            max-width: 1000px;
+            margin: 60px auto;
+            padding: 0 20px;
+        }
+
+        h2.section-title {
+            color: #10b981;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .bio, .education, .history, .hobbies {
+            background-color: #111827;
+            border-radius: 14px;
+            padding: 30px;
+            margin: 10px auto 40px auto;
+        }
+
+        .profile {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            display: block;
+            margin: 20px auto 0 auto;
+            object-fit: cover;
+            max-width: 100%;
+        }
+
+        .profile-large {
+            width: clamp(500px, 70vw, 1200px);
+            max-width: 80%;
+            height: auto;
+            border-radius: 14px;
+            display: block;
+            margin: 0 auto 20px auto;
+            object-fit: cover;
+        }
+
+        @media (max-width: 800px) {
+            .profile-large {
+                width: clamp(280px, 90vw, 760px);
+                max-width: 95vw;
+                margin: 8px auto 20px auto;
+            }
+        }
+
+        .bio p, .education p, .history p, .hobbies p {
+            font-size: 1.05rem;
+            line-height: 1.6;
+            opacity: 0.9;
+            text-align: center;
+        }
+
+        .education img.school {
+            width: 100%;
+            max-width: 400px;
+            display: block;
+            margin: 20px auto 0 auto;
+            border-radius: 10px;
+        }
+
+        .hobbies-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .hobby {
+            background-color: #1f2933;
+            padding: 15px 25px;
+            border-radius: 12px;
+            font-weight: 500;
+            opacity: 0.9;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px;
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body class="has-sidebar">
+
+<header class="site-header">
+    <div class="site-header-inner">
+        <div class="site-header-top">
+            <a class="logo-link" href="index.html" aria-label="Home">
+                <img src="assets/images/logo.png" alt="Logo" class="logo">
+            </a>
+            <a class="site-home-link" href="index.html">Main Page</a>
+        </div>
+        <div class="site-header-bottom">
+            <div class="site-header-left">
+                <div class="header-title">Engineering Portfolio</div>
+                <nav class="primary-nav" aria-label="Engineering Portfolio">
+                    <a href="portfolio.html">Home</a>
+                    <a href="about.html">About Me</a>
+                    <a href="work.html">Work Experience</a>
+                    <a href="projects.html">Projects</a>
+                </nav>
+            </div>
+
+            <div class="site-header-right">
+                <div class="header-title">Fabrication &amp; Product Development Services</div>
+                <nav class="service-nav" aria-label="Fabrication Services">
+                    <a href="fabrication.html">Home</a>
+                    <a href="lab-3d-printing.html">3D Printing</a>
+                    <a href="lab-laser-engraving.html">Laser Engraving</a>
+                    <a href="lab-product-development.html">Product Development</a>
+                </nav>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="container">
+    <aside class="side-panel">
+        <h3>About</h3>
+        <ul>
+            <li><a href="#overview">Overview</a></li>
+            <li><a href="#background">Background & Inspiration</a></li>
+            <li><a href="#education">Education</a></li>
+            <li><a href="#software">Software & Programming</a></li>
+        </ul>
+    </aside>
+
+    <main class="main-content">
+
+<!-- HERO / ABOUT -->
+<section class="hero" id="overview">
+    <div class="hero-content">
+        <h2>About Me</h2>
+        <p>A closer look at my background, education, and inspirations.</p>
+    </div>
+    <div class="hero-image">
+        <img src="assets/images/profile.jpg" alt="Samson Galvin" class="profile-large">
+    </div>
+</section>
+
+<!-- BIO -->
+<section class="bio" id="background">
+    <h2 class="section-title">Background and Inspiration</h2>
+
+    <p>
+        My passion for medical technology and robotics began in high school through the ASP summer program at Saint Paul’s, 
+        where I worked with the Go Baby Go Foundation to modify toy cars for toddlers with special needs. Later, I joined Digi Digits, 
+        a club in college where we created 3D-printed prosthetics for children. During my undergraduate studies at Penn State, 
+        I also served as a teaching assistant for the Engineering Design course, teaching SolidWorks and guiding students through design projects. 
+        These experiences inspired me to pursue further education and research in medical robotics.
+    </p>
+
+    <!-- Digi Digits Image -->
+    <div style="text-align: center; margin: 20px 0;">
+        <a href="projects.html#digi-digits" style="text-decoration: none; color: #ffffff;">
+            <img src="assets/images/dd5.jpg" alt="Digi Digits Project" style="width: 250px; border-radius: 14px; display: block; margin: 0 auto 10px auto;">
+            <span>Digi Digits 3D-Printed Prosthetics</span>
+        </a>
+    </div>
+    <!-- Graduate School Image -->
+    <div style="text-align: center;">
+        <a href="projects.html#laparoscopic" style="display: inline-block; text-decoration: none; color: #ffffff;">
+            <img src="assets/images/thesis1.jpeg" 
+                alt="SIFM Laparoscopic Research" 
+                style="width: 250px; border-radius: 14px; display: block; margin: 0 auto 10px auto;">
+            <span>Single Incision Free Motion (SIFM) Research</span>
+        </a>
+    </div>
+
+    <p>
+        After graduate school, I worked at ASML as a Mechanical Design Engineer, contributing to the development of a high-precision metrology machine. 
+        My work involved complex mechanical designs, including flexures, and demanded extremely tight tolerances to achieve the system’s performance goals.
+    </p>
+
+    <!-- ASML Image -->
+    <div style="text-align: center; margin: 20px 0;">
+        <a href="work.html" style="text-decoration: none; color: #ffffff;">
+            <img src="assets/images/asml.jpg" alt="ASML Metrology Machine" style="width: 250px; border-radius: 14px; display: block; margin: 0 auto 10px auto;">
+            <span>ASML Mechanical Design</span>
+        </a>
+    </div>
+
+    <p>
+        I’m now a Mechanical Design Engineer at DEKA Research & Development, where I continue to design and develop electromechanical medical devices that have real impact on people’s lives.
+    </p>
+
+    <!-- DEKA Image -->
+    <div style="text-align: center; margin: 20px 0;">
+        <a href="work.html" style="text-decoration: none; color: #ffffff;">
+            <img src="assets/images/deka1.png" alt="DEKA Medical Devices" style="width: 250px; border-radius: 14px; display: block; margin: 0 auto 10px auto;">
+            <span>DEKA Research and Development</span>
+        </a>
+    </div>
+
+</section>
+
+<!-- EDUCATION -->
+<section class="education" id="education">
+    <h2 class="section-title">Education</h2>
+
+    <ul class="education-list">
+        <li>
+            <strong>Bachelor of Science in Mechanical Engineering</strong><br>
+            Penn State University — 2021<br>
+            Minor in Mechatronics · GPA: 3.8
+        </li>
+        <li style="margin-top: 12px;">
+            <strong>Master of Science in Mechanical Engineering</strong><br>
+            Penn State University — 2023<br>
+            GPA: 4.0
+        </li>
+    </ul>
+
+    <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 20px;">
+        <img src="assets/images/pennstate1.png" alt="Penn State Undergraduate" class="school">
+        <img src="assets/images/pennstate2.jpg" alt="Penn State Graduate" class="school">
+    </div>
+</section>
+
+<!-- SOFTWARE AND PROGRAMMING -->
+<section class="software" id="software">
+    <h2 class="section-title">Software and Programming</h2>
+
+    <p>
+        SolidWorks, Siemens NX, AutoCAD, Fusion 360, ANSYS, Mecway, MATLAB, Python, JavaScript, C++,
+        Arduino, LabVIEW, Multisim.
+    </p>
+</section>
+
+    </main>
+</div>
+
+<footer>
+    © 2025 Samson Galvin
+</footer>
+
+<script src="assets/js/layout.js" defer></script>
+
+</body>
+</html>
