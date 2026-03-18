@@ -11,5 +11,9 @@
 window.LAB_FORM_ENDPOINTS = {
   printing: "",
   laser: "",
-  productDevelopment: ""
+  productDevelopment: "",
+
+  // Optional AI quote/chat endpoint (you must host this separately from GitHub Pages).
+  // Example: "https://your-backend.example.com/api/quote"
+  productDevelopmentAi: ""
 };
