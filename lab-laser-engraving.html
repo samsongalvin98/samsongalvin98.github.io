@@ -186,6 +186,44 @@
             line-height: 1.45;
         }
 
+        .laser-preview {
+            background: #232b36;
+            border-radius: 12px;
+            padding: 14px;
+            border: 1px solid rgba(16,185,129,0.25);
+            margin-top: 10px;
+        }
+
+        .laser-preview-img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            border: 1px solid rgba(229,231,235,0.16);
+        }
+
+        .laser-preview-canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+            border: 1px solid rgba(229,231,235,0.16);
+            background: rgba(17,24,39,0.35);
+        }
+
+        .laser-preview-meta {
+            margin-top: 8px;
+            color: #9ca3af;
+            font-size: 0.95rem;
+        }
+
+        .laser-estimate-line {
+            color: #d1d5db;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-top: 6px;
+        }
+
         .actions {
             display: flex;
             flex-wrap: wrap;
@@ -302,12 +340,41 @@
 
             <div class="grid">
                 <div>
-                    <label for="material">Material (optional)</label>
-                    <input id="material" name="material" type="text" placeholder="Wood, acrylic, anodized aluminum...">
+                    <label for="quantity">Quantity</label>
+                    <input id="quantity" name="quantity" type="number" min="1" step="1" value="1" required>
                 </div>
                 <div>
-                    <label for="size">Target Size (optional)</label>
-                    <input id="size" name="size" type="text" placeholder="e.g., 2 in x 1 in">
+                    <label for="deadline">Needed By (optional)</label>
+                    <input id="deadline" name="deadline" type="date">
+                </div>
+            </div>
+
+            <div class="grid">
+                <div>
+                    <label for="material">Material</label>
+                    <input id="material" name="material" type="text" placeholder="Wood, acrylic, anodized aluminum..." required>
+                </div>
+                <div>
+                    <label>Target Size</label>
+                    <div class="grid">
+                        <div>
+                            <label for="laserWidth" class="help">Width</label>
+                            <input id="laserWidth" name="laserWidth" type="number" min="0" step="0.01" placeholder="e.g., 2" required>
+                        </div>
+                        <div>
+                            <label for="laserHeight" class="help">Height</label>
+                            <input id="laserHeight" name="laserHeight" type="number" min="0" step="0.01" placeholder="e.g., 1" required>
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <label for="laserUnit" class="help">Units</label>
+                        <select id="laserUnit" name="laserUnit" required>
+                            <option value="in" selected>Inches (in)</option>
+                            <option value="mm">Millimeters (mm)</option>
+                            <option value="cm">Centimeters (cm)</option>
+                        </select>
+                    </div>
+                    <input id="size" name="size" type="hidden" value="">
                 </div>
             </div>
 
@@ -321,21 +388,21 @@
                         <option value="NotSure">Not sure</option>
                     </select>
                 </div>
-                <div>
-                    <label for="deadline">Needed By (optional)</label>
-                    <input id="deadline" name="deadline" type="date">
-                </div>
+                <div></div>
             </div>
 
             <div>
                 <label for="file">Artwork / File</label>
-                <input id="file" name="file" type="file" accept=".svg,.dxf,.pdf,.ai,.eps,.png,.jpg,.jpeg,.zip" required>
-                <div class="help">Accepted: SVG, DXF, PDF, AI/EPS, PNG/JPG, ZIP. Prefer vector files (SVG/DXF/PDF) for best results.</div>
+                <input id="file" name="file" type="file" accept=".png,.svg,.dxf,.pdf,.ai,.eps,.jpg,.jpeg,.zip" required>
+                <div class="help">Preferred: PNG, SVG, DXF. Also accepted: PDF, AI/EPS, JPG, ZIP.</div>
+
+                <div id="laserPreview" class="laser-preview" aria-live="polite"></div>
+                <div id="laserEstimate" class="laser-preview" aria-live="polite"></div>
             </div>
 
             <div>
-                <label for="notes">Notes / Requirements</label>
-                <textarea id="notes" name="notes" placeholder="Engrave depth (if applicable), desired look, any text to include, alignment/placement notes, constraints..." required></textarea>
+                <label for="notes">Notes / Requirements (optional)</label>
+                <textarea id="notes" name="notes" placeholder="Engrave depth (if applicable), desired look, any text to include, alignment/placement notes, constraints..."></textarea>
             </div>
 
             <div class="actions">
@@ -354,6 +421,7 @@
 
 <script src="assets/js/lab-form-endpoints.js" defer></script>
 <script src="assets/js/lab-forms.js" defer></script>
+<script src="assets/js/laser-engraving-estimator.js" defer></script>
 <script src="assets/js/layout.js" defer></script>
 
 </body>

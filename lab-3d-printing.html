@@ -186,34 +186,25 @@
             line-height: 1.45;
         }
 
-        .stl-preview-list {
+        .stl-estimate-list {
             display: grid;
             gap: 14px;
             margin-top: 10px;
         }
 
-        .stl-preview-item {
+        .stl-estimate-item {
             background: #232b36;
             border-radius: 12px;
             padding: 14px;
             border: 1px solid rgba(16,185,129,0.25);
         }
 
-        .stl-preview-title {
+        .stl-estimate-title {
             font-weight: 700;
             margin-bottom: 8px;
         }
 
-        .stl-preview-canvas {
-            width: 100%;
-            max-width: 520px;
-            margin: 10px auto;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid rgba(229,231,235,0.16);
-        }
-
-        .stl-preview-metrics {
+        .stl-estimate-metrics {
             color: #d1d5db;
             font-size: 0.95rem;
             line-height: 1.5;
@@ -373,11 +364,11 @@
                         <option value="cm">Centimeters (cm)</option>
                         <option value="in">Inches (in)</option>
                     </select>
-                    <div class="help">Used only for STL previews/estimates (STL files don’t store units).</div>
+                    <div class="help">Used only for STL estimates (STL files don’t store units).</div>
                 </div>
                 <div>
-                    <label>STL Preview + Estimate</label>
-                    <div id="stlPreviewList" class="stl-preview-list" aria-live="polite"></div>
+                    <label>STL Estimate</label>
+                    <div id="stlEstimateList" class="stl-estimate-list" aria-live="polite"></div>
                     <div class="help">Estimates are approximate and intended for quick quoting only.</div>
                 </div>
             </div>
@@ -404,8 +395,7 @@
 <script src="assets/js/lab-form-endpoints.js" defer></script>
 <script src="assets/js/lab-forms.js" defer></script>
 <script src="assets/js/print-material-color.js" defer></script>
-<script type="module" src="assets/js/three-stlloader-global.js"></script>
-<script src="assets/js/stl-preview-estimator.js" defer></script>
+<script src="assets/js/stl-estimator.js" defer></script>
 <script src="assets/js/layout.js" defer></script>
 
 </body>

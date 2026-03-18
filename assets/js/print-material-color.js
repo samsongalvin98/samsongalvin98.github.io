@@ -138,6 +138,8 @@
   }
 
   function setMaterialSelect(materialSelect, materials) {
+    const previousValue = (materialSelect.value || "").trim();
+
     // Force the list to match the CSV.
     materialSelect.innerHTML = "";
 
@@ -155,8 +157,17 @@
       materialSelect.appendChild(opt);
     });
 
-    // If there are materials available, select the first one to keep the form usable immediately.
-    if (materials.length) materialSelect.value = materials[0];
+    if (!materials.length) return;
+
+    // Prefer restoring prior selection if still available.
+    if (previousValue && materials.includes(previousValue)) {
+      materialSelect.value = previousValue;
+      return;
+    }
+
+    // If no material is assigned, assume PLA.
+    const pla = materials.find((m) => String(m).trim().toLowerCase() === "pla");
+    materialSelect.value = pla || materials[0];
   }
 
   async function initMaterialColorDropdowns() {

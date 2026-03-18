@@ -7,20 +7,13 @@
 
   const DEFAULT_LABOR_RATE_PER_HOUR = 30;
 
-  function getLaborRatePerHourFromMaterial(materialRaw) {
-    const material = String(materialRaw || "")
-      .trim()
-      .toLowerCase();
-
-    // Match loosely so values like "PLA+" or "PETG (Carbon Fiber)" work.
-    if (material.includes("sla") || material.includes("resin")) return 50;
-    if (material.includes("petg")) return 35;
-    if (material.includes("pla")) return 25;
-    return DEFAULT_LABOR_RATE_PER_HOUR;
-  }
-
   function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
+  }
+
+  function formatUsd(value) {
+    const safe = Number.isFinite(value) ? value : 0;
+    return safe.toLocaleString(undefined, { style: "currency", currency: "USD" });
   }
 
   function formatNumber(value, digits = 2) {
@@ -28,11 +21,6 @@
       maximumFractionDigits: digits,
       minimumFractionDigits: digits,
     });
-  }
-
-  function formatUsd(value) {
-    const safe = Number.isFinite(value) ? value : 0;
-    return safe.toLocaleString(undefined, { style: "currency", currency: "USD" });
   }
 
   function toCents(amount) {
@@ -53,15 +41,32 @@
     return mins + "m";
   }
 
+  function normalizeText(value) {
+    return String(value || "")
+      .trim()
+      .toLowerCase();
+  }
+
+  function getLaborRatePerHourFromMaterial(materialRaw) {
+    const material = normalizeText(materialRaw);
+
+    // If no material is assigned, assume PLA.
+    if (!material) return 25;
+
+    if (material.includes("sla") || material.includes("resin")) return 50;
+    if (material.includes("petg")) return 35;
+    if (material.includes("pla")) return 25;
+
+    return DEFAULT_LABOR_RATE_PER_HOUR;
+  }
+
   function detectBinarySTL(buffer) {
-    // Binary STL has 80-byte header + uint32 triangle count + 50 bytes per triangle.
     if (!buffer || buffer.byteLength < 84) return false;
     const dv = new DataView(buffer);
     const triCount = dv.getUint32(80, true);
     const expected = 84 + triCount * 50;
     if (expected === buffer.byteLength) return true;
 
-    // Fallback heuristic: if the file starts with "solid" it might be ASCII.
     const header = new Uint8Array(buffer, 0, Math.min(80, buffer.byteLength));
     const text = new TextDecoder().decode(header).trim().toLowerCase();
     if (text.startsWith("solid")) return false;
@@ -79,7 +84,6 @@
   }
 
   function tetraVolume(v0, v1, v2) {
-    // Signed volume contribution for triangle (v0,v1,v2) with origin.
     return (
       v0[0] * (v1[1] * v2[2] - v1[2] * v2[1]) -
       v0[1] * (v1[0] * v2[2] - v1[2] * v2[0]) +
@@ -104,8 +108,7 @@
     let offset = 84;
 
     for (let i = 0; i < triangleCount; i++) {
-      // normal(12 bytes) skip
-      offset += 12;
+      offset += 12; // normal
 
       const v0 = [dv.getFloat32(offset, true), dv.getFloat32(offset + 4, true), dv.getFloat32(offset + 8, true)];
       offset += 12;
@@ -120,14 +123,10 @@
       updateBounds(bounds, v1[0], v1[1], v1[2]);
       updateBounds(bounds, v2[0], v2[1], v2[2]);
 
-      offset += 2; // attribute byte count
+      offset += 2;
     }
 
-    return {
-      triangleCount,
-      signedVolumeRaw: signedVolume,
-      boundsRaw: bounds,
-    };
+    return { triangleCount, signedVolumeRaw: signedVolume, boundsRaw: bounds };
   }
 
   function parseAsciiSTL(buffer) {
@@ -143,9 +142,7 @@
       numbers.push(Number.parseFloat(match[3]));
     }
 
-    if (numbers.length < 9 || numbers.length % 9 !== 0) {
-      throw new Error("ASCII STL parse failed.");
-    }
+    if (numbers.length < 9 || numbers.length % 9 !== 0) throw new Error("ASCII STL parse failed.");
 
     const bounds = {
       minX: Infinity,
@@ -171,11 +168,7 @@
       updateBounds(bounds, v2[0], v2[1], v2[2]);
     }
 
-    return {
-      triangleCount,
-      signedVolumeRaw: signedVolume,
-      boundsRaw: bounds,
-    };
+    return { triangleCount, signedVolumeRaw: signedVolume, boundsRaw: bounds };
   }
 
   function parseSTL(buffer) {
@@ -200,7 +193,6 @@
   }
 
   function getDefaultEstimateSettings() {
-    // Mirrors the defaults used in stl_print_estimator.html.
     return {
       infill: 0.2,
       layerHeight: 0.2,
@@ -235,25 +227,18 @@
 
     const materialCm3 = printedVolumeMm3 / 1000;
     const massG = materialCm3 * settings.density;
-    const cost = (massG / 1000) * settings.costKg;
+    const materialCost = (massG / 1000) * settings.costKg;
 
-    const volumetricRate = Math.max(
-      settings.printSpeed * settings.layerHeight * settings.lineWidth * settings.flowEfficiency,
-      0.1
-    );
-
+    const volumetricRate = Math.max(settings.printSpeed * settings.layerHeight * settings.lineWidth * settings.flowEfficiency, 0.1);
     const printSeconds = (printedVolumeMm3 / volumetricRate) * (1 + settings.overhead / 100);
 
     return {
       modelVolumeMm3: meshMm.volumeMm3,
-      printedVolumeMm3,
       filamentLengthMm,
       massG,
-      cost,
+      materialCost,
       printSeconds,
-      triangleCount: meshMm.triangleCount,
       sizeMm: meshMm.sizeMm,
-      effectiveSolidFraction,
     };
   }
 
@@ -266,132 +251,40 @@
     while (el.firstChild) el.removeChild(el.firstChild);
   }
 
-  function waitForThreeStlReady(timeoutMs = 4000) {
-    if (window.THREE && window.THREE.STLLoader) return Promise.resolve(true);
-    if (window.__THREE_STL_READY__ && (!window.THREE || !window.THREE.STLLoader)) {
-      return Promise.resolve(false);
-    }
-
-    return new Promise((resolve) => {
-      let settled = false;
-      const done = (value) => {
-        if (settled) return;
-        settled = true;
-        window.removeEventListener("three-stlloader-ready", onReady);
-        resolve(value);
-      };
-
-      const onReady = () => done(!!(window.THREE && window.THREE.STLLoader));
-      window.addEventListener("three-stlloader-ready", onReady, { once: true });
-
-      setTimeout(() => done(!!(window.THREE && window.THREE.STLLoader)), timeoutMs);
-    });
+  function getMaterialValue() {
+    const materialSelect = document.getElementById("material");
+    if (!materialSelect) return "";
+    return materialSelect.value || materialSelect.options?.[materialSelect.selectedIndex]?.text || "";
   }
 
-  function renderStlPreview(container, arrayBuffer, modelUnit) {
-    if (!window.THREE || !window.THREE.STLLoader) {
-      const note = document.createElement("div");
-      note.className = "help";
-      note.textContent = "3D preview unavailable (Three.js failed to load).";
-      container.appendChild(note);
-      return;
-    }
-
-    const loader = new window.THREE.STLLoader();
-    const geometry = loader.parse(arrayBuffer);
-
-    // Apply unit scaling so the view matches the chosen model units.
-    const scale = UNIT_TO_MM[modelUnit] || 1;
-    geometry.scale(scale, scale, scale);
-
-    geometry.computeVertexNormals();
-    geometry.computeBoundingBox();
-    geometry.computeBoundingSphere();
-
-    const width = 520;
-    const height = 280;
-
-    const renderer = new window.THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-
-    const scene = new window.THREE.Scene();
-
-    const camera = new window.THREE.PerspectiveCamera(45, width / height, 0.1, 100000);
-
-    const material = new window.THREE.MeshStandardMaterial({
-      color: 0xd1d5db,
-      metalness: 0.05,
-      roughness: 0.7,
-    });
-
-    const mesh = new window.THREE.Mesh(geometry, material);
-
-    // Center mesh
-    const box = geometry.boundingBox;
-    const center = new window.THREE.Vector3();
-    box.getCenter(center);
-    mesh.position.sub(center);
-
-    scene.add(mesh);
-
-    scene.add(new window.THREE.AmbientLight(0xffffff, 0.65));
-    const light = new window.THREE.DirectionalLight(0xffffff, 0.85);
-    light.position.set(1, 1, 1);
-    scene.add(light);
-
-    const sphere = geometry.boundingSphere;
-    const radius = sphere ? sphere.radius : 50;
-    camera.position.set(0, 0, Math.max(radius * 2.6, 60));
-    camera.lookAt(0, 0, 0);
-
-    renderer.render(scene, camera);
-
-    const frame = document.createElement("div");
-    frame.className = "stl-preview-canvas";
-    frame.appendChild(renderer.domElement);
-    container.appendChild(frame);
-  }
-
-  function renderFileCard(listEl, { file, estimate, modelUnit, arrayBuffer, totalCostCents, laborRatePerHour }) {
+  function renderEstimateItem(listEl, { fileName, estimate, modelUnit, totalCostCents }) {
     const item = document.createElement("div");
-    item.className = "stl-preview-item";
+    item.className = "stl-estimate-item";
 
     const title = document.createElement("div");
-    title.className = "stl-preview-title";
-    title.textContent = file.name;
+    title.className = "stl-estimate-title";
+    title.textContent = fileName;
     item.appendChild(title);
 
-    if (!isStlFile(file)) {
-      const note = document.createElement("div");
-      note.className = "stl-preview-metrics";
-      note.textContent = "Preview/estimate available for STL files only.";
-      item.appendChild(note);
+    const body = document.createElement("div");
+    body.className = "stl-estimate-metrics";
+
+    if (!estimate) {
+      body.textContent = "Estimate available for STL files only.";
+      item.appendChild(body);
       listEl.appendChild(item);
       return;
     }
 
-    // Preview
-    if (arrayBuffer) {
-      renderStlPreview(item, arrayBuffer, modelUnit);
-    }
-
-    const metrics = document.createElement("div");
-    metrics.className = "stl-preview-metrics";
-
     const volumeCm3 = estimate.modelVolumeMm3 / 1000;
     const size = estimate.sizeMm;
 
-    const costCents = Number.isFinite(totalCostCents)
-      ? totalCostCents
-      : toCents(estimate.cost + (estimate.printSeconds / 3600) * (Number.isFinite(laborRatePerHour) ? laborRatePerHour : DEFAULT_LABOR_RATE_PER_HOUR));
-
-    metrics.innerHTML =
+    body.innerHTML =
       "<div><strong>Estimated print time:</strong> " +
       durationString(estimate.printSeconds) +
       "</div>" +
       "<div><strong>Estimated cost:</strong> " +
-      formatUsd(fromCents(costCents)) +
+      formatUsd(fromCents(totalCostCents)) +
       "</div>" +
       "<div><strong>Volume:</strong> " +
       formatNumber(volumeCm3, 2) +
@@ -406,15 +299,14 @@
       modelUnit +
       ")</div>";
 
-    item.appendChild(metrics);
+    item.appendChild(body);
     listEl.appendChild(item);
   }
 
-  async function buildPreviews() {
+  async function buildEstimates() {
     const fileInput = document.getElementById("file");
     const unitSelect = document.getElementById("stlModelUnit");
-    const materialSelect = document.getElementById("material");
-    const listEl = document.getElementById("stlPreviewList");
+    const listEl = document.getElementById("stlEstimateList");
 
     if (!fileInput || !unitSelect || !listEl) return;
 
@@ -424,7 +316,7 @@
     if (!files.length) {
       const empty = document.createElement("div");
       empty.className = "help";
-      empty.textContent = "Select one or more files to see STL previews/estimates.";
+      empty.textContent = "Select one or more files to see STL estimates.";
       listEl.appendChild(empty);
       return;
     }
@@ -432,29 +324,14 @@
     const modelUnit = (unitSelect.value || "mm").trim();
     const settings = getDefaultEstimateSettings();
 
-    const materialValue = materialSelect
-      ? materialSelect.value || materialSelect.options?.[materialSelect.selectedIndex]?.text
-      : "";
-    const laborRatePerHour = getLaborRatePerHourFromMaterial(materialValue);
+    const laborRatePerHour = getLaborRatePerHourFromMaterial(getMaterialValue());
 
-    const anyStl = files.some(isStlFile);
-    if (anyStl) {
-      const ready = await waitForThreeStlReady();
-      if (!ready) {
-        const warn = document.createElement("div");
-        warn.className = "help";
-        warn.textContent =
-          "3D preview may be unavailable because Three.js/STLLoader did not load. If estimates show but no preview, check the browser console for a blocked CDN request.";
-        listEl.appendChild(warn);
-      }
-    }
-
-    let totalCostCents = 0;
     let totalSeconds = 0;
+    let totalCostCents = 0;
 
     for (const file of files) {
       if (!isStlFile(file)) {
-        renderFileCard(listEl, { file, estimate: null, modelUnit, arrayBuffer: null });
+        renderEstimateItem(listEl, { fileName: file.name, estimate: null, modelUnit, totalCostCents: 0 });
         continue;
       }
 
@@ -463,45 +340,47 @@
         const meshRaw = parseSTL(arrayBuffer);
         const meshMm = convertMeshToMillimeters(meshRaw, modelUnit);
         const estimate = estimatePrint(meshMm, settings);
+
         totalSeconds += estimate.printSeconds;
 
         const laborCost = (estimate.printSeconds / 3600) * laborRatePerHour;
-        const fileTotalCostCents = toCents(estimate.cost + laborCost);
+        const fileTotalCostCents = toCents(estimate.materialCost + laborCost);
+
         totalCostCents += fileTotalCostCents;
 
-        renderFileCard(listEl, {
-          file,
+        renderEstimateItem(listEl, {
+          fileName: file.name,
           estimate,
           modelUnit,
-          arrayBuffer,
           totalCostCents: fileTotalCostCents,
-          laborRatePerHour,
         });
       } catch (err) {
         const item = document.createElement("div");
-        item.className = "stl-preview-item";
+        item.className = "stl-estimate-item";
         const title = document.createElement("div");
-        title.className = "stl-preview-title";
+        title.className = "stl-estimate-title";
         title.textContent = file.name;
         const note = document.createElement("div");
-        note.className = "stl-preview-metrics";
-        note.textContent = "Could not preview/estimate this STL.";
+        note.className = "stl-estimate-metrics";
+        note.textContent = "Could not estimate this STL.";
         item.appendChild(title);
         item.appendChild(note);
         listEl.appendChild(item);
-        console.error("STL preview/estimate failed", { file: file.name, err });
+        console.error("STL estimate failed", { file: file.name, err });
       }
     }
 
+    const anyStl = files.some(isStlFile);
     if (anyStl) {
       const total = document.createElement("div");
-      total.className = "stl-preview-item";
-      const title = document.createElement("div");
-      title.className = "stl-preview-title";
-      title.textContent = "Estimated total (STL files)";
-      const val = document.createElement("div");
-      val.className = "stl-preview-metrics";
+      total.className = "stl-estimate-item";
 
+      const title = document.createElement("div");
+      title.className = "stl-estimate-title";
+      title.textContent = "Estimated total (STL files)";
+
+      const val = document.createElement("div");
+      val.className = "stl-estimate-metrics";
       val.innerHTML =
         "<div><strong>Total print time:</strong> " +
         durationString(totalSeconds) +
@@ -509,6 +388,7 @@
         "<div><strong>Total cost:</strong> " +
         formatUsd(fromCents(totalCostCents)) +
         "</div>";
+
       total.appendChild(title);
       total.appendChild(val);
       listEl.appendChild(total);
@@ -520,10 +400,10 @@
     const unitSelect = document.getElementById("stlModelUnit");
     const materialSelect = document.getElementById("material");
 
-    if (fileInput) fileInput.addEventListener("change", buildPreviews);
-    if (unitSelect) unitSelect.addEventListener("change", buildPreviews);
-    if (materialSelect) materialSelect.addEventListener("change", buildPreviews);
+    if (fileInput) fileInput.addEventListener("change", buildEstimates);
+    if (unitSelect) unitSelect.addEventListener("change", buildEstimates);
+    if (materialSelect) materialSelect.addEventListener("change", buildEstimates);
 
-    buildPreviews();
+    buildEstimates();
   });
 })();
