@@ -186,6 +186,39 @@
             line-height: 1.45;
         }
 
+        .stl-preview-list {
+            display: grid;
+            gap: 14px;
+            margin-top: 10px;
+        }
+
+        .stl-preview-item {
+            background: #232b36;
+            border-radius: 12px;
+            padding: 14px;
+            border: 1px solid rgba(16,185,129,0.25);
+        }
+
+        .stl-preview-title {
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .stl-preview-canvas {
+            width: 100%;
+            max-width: 520px;
+            margin: 10px auto;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(229,231,235,0.16);
+        }
+
+        .stl-preview-metrics {
+            color: #d1d5db;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
         .actions {
             display: flex;
             flex-wrap: wrap;
@@ -288,10 +321,6 @@
             Configure your upload endpoints in <strong>assets/js/lab-form-endpoints.js</strong> to enable submissions.
         </div>
 
-        <div style="margin-top: 16px;">
-            <div data-include-csv="assets/data/print-color-options.csv" data-csv-caption="Color Options (PLA / PETG / SLA)"></div>
-        </div>
-
         <form id="printRequestForm" method="POST" enctype="multipart/form-data" data-material-color-csv="assets/data/print-color-options.csv">
             <div class="grid">
                 <div>
@@ -332,8 +361,25 @@
 
             <div>
                 <label for="file">Part File</label>
-                <input id="file" name="file" type="file" accept=".stl,.3mf,.step,.stp,.obj,.zip" required>
-                <div class="help">Accepted: STL, 3MF, STEP, OBJ, ZIP. If you have multiple parts, upload a single ZIP.</div>
+                <input id="file" name="file" type="file" accept=".stl,.3mf,.step,.stp,.obj,.zip" multiple required>
+                <div class="help">Accepted: STL, 3MF, STEP, OBJ, ZIP. You can upload multiple files.</div>
+            </div>
+
+            <div class="grid">
+                <div>
+                    <label for="stlModelUnit">STL Model Units</label>
+                    <select id="stlModelUnit" name="stlModelUnit">
+                        <option value="mm" selected>Millimeters (mm)</option>
+                        <option value="cm">Centimeters (cm)</option>
+                        <option value="in">Inches (in)</option>
+                    </select>
+                    <div class="help">Used only for STL previews/estimates (STL files don’t store units).</div>
+                </div>
+                <div>
+                    <label>STL Preview + Estimate</label>
+                    <div id="stlPreviewList" class="stl-preview-list" aria-live="polite"></div>
+                    <div class="help">Estimates are approximate and intended for quick quoting only.</div>
+                </div>
             </div>
 
             <div>
@@ -358,6 +404,8 @@
 <script src="assets/js/lab-form-endpoints.js" defer></script>
 <script src="assets/js/lab-forms.js" defer></script>
 <script src="assets/js/print-material-color.js" defer></script>
+<script type="module" src="assets/js/three-stlloader-global.js"></script>
+<script src="assets/js/stl-preview-estimator.js" defer></script>
 <script src="assets/js/layout.js" defer></script>
 
 </body>
