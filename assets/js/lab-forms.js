@@ -24,7 +24,7 @@
 
     if (endpoint) {
       form.action = endpoint;
-      // Allow normal form submission (no CORS issues), which is the most reliable for 3rd-party form backends.
+      // Allow normal form submission (no CORS issues), which is the most reliable way to post to your backend.
       // The backend may redirect to its own thank-you page.
       setStatus(statusEl, "");
       return;

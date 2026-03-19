@@ -338,8 +338,8 @@
 
     <div class="card">
         <div class="notice">
-            <strong>Note:</strong> This site is hosted on GitHub Pages (static hosting), so uploads must go to a 3rd-party form backend.
-            Configure your upload endpoints in <strong>assets/js/lab-form-endpoints.js</strong> to enable submissions.
+            <strong>Note:</strong> This site is hosted on GitHub Pages, so uploads must go to your separate backend server.
+            Configure your backend endpoint in <strong>assets/js/lab-form-endpoints.js</strong> to enable submissions.
         </div>
 
         <form id="devRequestForm" method="POST" enctype="multipart/form-data">
@@ -378,8 +378,8 @@
 
             <div>
                 <label for="file">Files (optional)</label>
-                <input id="file" name="file" type="file" accept=".zip,.pdf,.stl,.3mf,.step,.stp,.obj,.png,.jpg,.jpeg,.svg,.dxf" multiple>
-                <div class="help">Upload any relevant files (CAD, sketches, screenshots, requirements). If you have many files, a single ZIP is best.</div>
+                <input id="file" name="file" type="file" accept=".pdf,.zip" multiple>
+                <div class="help">Upload a PDF brief or a ZIP package of requirements and reference material.</div>
             </div>
 
             <div>
@@ -397,7 +397,7 @@
     <div class="card">
         <h3 style="margin-bottom: 10px; color: #10b981;">AI Quick Quote (Approx.)</h3>
         <div class="help">
-            This chat can provide a rough quote range quickly. It requires a separate backend server to keep the API key private (GitHub Pages can’t safely store keys).
+            This chat can provide a rough quote range quickly. It uses the same separate backend server to keep the API key private.
         </div>
 
         <div class="ai-chat">

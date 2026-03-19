@@ -322,8 +322,8 @@
 
     <div class="card">
         <div class="notice">
-            <strong>Note:</strong> This site is hosted on GitHub Pages (static hosting), so uploads must go to a 3rd-party form backend.
-            Configure your upload endpoints in <strong>assets/js/lab-form-endpoints.js</strong> to enable submissions.
+            <strong>Note:</strong> This site is hosted on GitHub Pages, so uploads must go to your separate backend server.
+            Configure your backend endpoint in <strong>assets/js/lab-form-endpoints.js</strong> to enable submissions.
         </div>
 
         <form id="laserRequestForm" method="POST" enctype="multipart/form-data">
@@ -393,8 +393,8 @@
 
             <div>
                 <label for="file">Artwork / File</label>
-                <input id="file" name="file" type="file" accept=".png,.svg,.dxf,.pdf,.ai,.eps,.jpg,.jpeg,.zip" required>
-                <div class="help">Preferred: PNG, SVG, DXF. Also accepted: PDF, AI/EPS, JPG, ZIP.</div>
+                <input id="file" name="file" type="file" accept=".svg,.dxf,.png,.jpeg,.pdf,.zip" required>
+                <div class="help">Accepted: SVG, DXF, PNG, JPEG, PDF, ZIP.</div>
 
                 <div id="laserPreview" class="laser-preview" aria-live="polite"></div>
                 <div id="laserEstimate" class="laser-preview" aria-live="polite"></div>

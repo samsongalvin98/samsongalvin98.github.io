@@ -308,8 +308,8 @@
 
     <div class="card">
         <div class="notice">
-            <strong>Note:</strong> This site is hosted on GitHub Pages (static hosting), so uploads must go to a 3rd-party form backend.
-            Configure your upload endpoints in <strong>assets/js/lab-form-endpoints.js</strong> to enable submissions.
+            <strong>Note:</strong> This site is hosted on GitHub Pages, so uploads must go to your separate backend server.
+            Configure your backend endpoint in <strong>assets/js/lab-form-endpoints.js</strong> to enable submissions.
         </div>
 
         <form id="printRequestForm" method="POST" enctype="multipart/form-data" data-material-color-csv="assets/data/print-color-options.csv">
@@ -352,8 +352,8 @@
 
             <div>
                 <label for="file">Part File</label>
-                <input id="file" name="file" type="file" accept=".stl,.3mf,.step,.stp,.obj,.zip" multiple required>
-                <div class="help">Accepted: STL, 3MF, STEP, OBJ, ZIP. You can upload multiple files.</div>
+                <input id="file" name="file" type="file" accept=".stl,.step,.zip" multiple required>
+                <div class="help">Accepted: STL, STEP, ZIP. You can upload multiple files.</div>
             </div>
 
             <div class="grid">
