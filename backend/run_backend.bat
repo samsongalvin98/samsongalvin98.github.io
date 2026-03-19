@@ -17,6 +17,22 @@ REM   setx SUBMISSIONS_DIR "C:\backend-data\submissions"
 
 cd /d "%~dp0"
 
+set "PYTHON_EXE=%~dp0..\.venv\Scripts\python.exe"
+if exist "%PYTHON_EXE%" goto :run_backend
+
+where python >nul 2>nul
+if %errorlevel%==0 (
+	set "PYTHON_EXE=python"
+	goto :run_backend
+)
+
+echo Python was not found.
+echo Install Python or create the workspace virtual environment at ..\.venv first.
+pause
+exit /b 1
+
+:run_backend
+
 echo Starting backend on http://localhost:8788 ...
 echo Upload endpoints:
 echo   /api/print-request
@@ -26,4 +42,11 @@ echo AI endpoint:
 echo   /api/quote
 echo.
 
-python -m uvicorn app:app --host 0.0.0.0 --port 8788
+"%PYTHON_EXE%" -m uvicorn app:app --host 0.0.0.0 --port 8788
+
+if errorlevel 1 (
+	echo.
+	echo Backend startup failed.
+	pause
+	exit /b 1
+)

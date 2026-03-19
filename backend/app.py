@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Sequence
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from pydantic import BaseModel
 from starlette.status import HTTP_303_SEE_OTHER
 
@@ -126,7 +126,7 @@ def make_submission_dir(category: str) -> Path:
     return submission_dir
 
 
-def success_response(kind: str) -> HTMLResponse | RedirectResponse:
+def success_response(kind: str) -> Response:
     if SUCCESS_REDIRECT_URL:
         separator = "&" if "?" in SUCCESS_REDIRECT_URL else "?"
         return RedirectResponse(
@@ -187,7 +187,7 @@ async def print_request(
     stlModelUnit: Optional[str] = Form(None),
     notes: str = Form(...),
     uploaded_files: List[UploadFile] = File(..., alias="file"),
-) -> HTMLResponse | RedirectResponse:
+) -> Response:
     validate_files(uploaded_files, FILE_RULES["printing"], "3D printing request")
     submission_dir = make_submission_dir("printing")
     files = await save_files(uploaded_files, submission_dir / "files")
@@ -227,7 +227,7 @@ async def laser_request(
     process: Optional[str] = Form(None),
     notes: Optional[str] = Form(None),
     uploaded_files: List[UploadFile] = File(..., alias="file"),
-) -> HTMLResponse | RedirectResponse:
+) -> Response:
     validate_files(uploaded_files, FILE_RULES["laser"], "laser engraving request")
     submission_dir = make_submission_dir("laser")
     files = await save_files(uploaded_files, submission_dir / "files")
@@ -265,7 +265,7 @@ async def product_request(
     requestType: str = Form(...),
     notes: str = Form(...),
     uploaded_files: Optional[List[UploadFile]] = File(None, alias="file"),
-) -> HTMLResponse | RedirectResponse:
+) -> Response:
     uploads = uploaded_files or []
     if uploads:
         validate_files(uploads, FILE_RULES["product"], "product development request")
