@@ -12,10 +12,8 @@
 // Leave an endpoint blank to disable that form submission.
 
 window.LAB_FORM_ENDPOINTS = {
-  printing: "",
-  laser: "",
-  productDevelopment: "",
-
-  // Optional AI quote/chat endpoint.
-  productDevelopmentAi: ""
+  printing: "https://pop-packaging-benefit-supplied.trycloudflare.com/api/print-request",
+  laser: "https://pop-packaging-benefit-supplied.trycloudflare.com/api/laser-request",
+  productDevelopment: "https://pop-packaging-benefit-supplied.trycloudflare.com/api/product-request",
+  productDevelopmentAi: "https://pop-packaging-benefit-supplied.trycloudflare.com/api/quote"
 };
