@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Submission Control</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        .admin-page {
+            min-height: 100vh;
+            padding: 48px 20px 80px;
+            background: linear-gradient(180deg, rgba(17,24,39,0.95), rgba(31,41,51,1));
+        }
+
+        .admin-shell {
+            max-width: 980px;
+            margin: 0 auto;
+            display: grid;
+            gap: 20px;
+        }
+
+        .admin-card {
+            background: rgba(17,24,39,0.96);
+            border: 1px solid rgba(16,185,129,0.18);
+            border-radius: 18px;
+            padding: 24px;
+            box-shadow: 0 18px 50px rgba(0,0,0,0.28);
+        }
+
+        .admin-card h2,
+        .admin-card h3 {
+            margin: 0 0 8px;
+            color: #ffffff;
+        }
+
+        .admin-card p {
+            margin: 0;
+            color: #9ca3af;
+            line-height: 1.55;
+        }
+
+        .admin-auth-form,
+        .admin-upload-form {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .admin-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .admin-toolbar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .admin-auth-form input,
+        .admin-upload-form input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(229,231,235,0.18);
+            background: rgba(255,255,255,0.04);
+            color: #e5e7eb;
+        }
+
+        .admin-button,
+        .admin-download-action,
+        .admin-delete-action {
+            border: none;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .admin-button,
+        .admin-download-action {
+            background: #10b981;
+            color: #111827;
+        }
+
+        .admin-delete-action {
+            background: rgba(127,29,29,0.36);
+            color: #fecaca;
+            border: 1px solid rgba(248,113,113,0.45);
+        }
+
+        .admin-secondary {
+            background: #111827;
+            color: #10b981;
+            border: 1px solid #10b981;
+        }
+
+        .admin-status {
+            min-height: 1.2em;
+            color: #9ca3af;
+            font-size: 0.95rem;
+        }
+
+        .admin-textarea {
+            width: 100%;
+            min-height: 260px;
+            margin-top: 18px;
+            padding: 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(229,231,235,0.18);
+            background: rgba(255,255,255,0.04);
+            color: #e5e7eb;
+            font: 0.95rem/1.5 Consolas, Monaco, monospace;
+            resize: vertical;
+        }
+
+        .admin-list {
+            display: grid;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .admin-item,
+        .admin-empty {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            align-items: center;
+            padding: 14px;
+            border-radius: 14px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .admin-item-info {
+            min-width: 0;
+        }
+
+        .admin-item-name {
+            color: #ffffff;
+            font-weight: 700;
+            word-break: break-word;
+        }
+
+        .admin-item-meta,
+        .admin-empty {
+            margin-top: 6px;
+            color: #9ca3af;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .admin-item-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .admin-hidden {
+            display: none;
+        }
+
+        @media (max-width: 760px) {
+            .admin-auth-form,
+            .admin-upload-form {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-item {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .admin-item-actions {
+                justify-content: stretch;
+            }
+        }
+    </style>
+</head>
+<body class="has-sidebar">
+<header class="site-header">
+    <div class="site-header-inner">
+        <div class="site-header-top">
+            <a class="logo-link" href="index.html" aria-label="Site Home">
+                <img src="assets/images/logo.png" alt="Logo" class="logo">
+            </a>
+            <a class="site-home-link" href="fabrication.html">Back to Fabrication</a>
+        </div>
+        <div class="site-header-bottom">
+            <div class="site-header-left">
+                <div class="header-title">Engineering Portfolio</div>
+                <nav class="primary-nav" aria-label="Engineering Portfolio">
+                    <a href="portfolio.html">Home</a>
+                    <a href="about.html">About Me</a>
+                    <a href="work.html">Work Experience</a>
+                    <a href="projects.html">Projects</a>
+                </nav>
+            </div>
+            <div class="site-header-right">
+                <div class="header-title">Fabrication &amp; Product Development Services</div>
+                <nav class="service-nav" aria-label="Fabrication Services">
+                    <a href="fabrication.html">Home</a>
+                    <a href="lab-3d-printing.html">3D Printing</a>
+                    <a href="lab-laser-engraving.html">Laser Engraving</a>
+                    <a href="lab-product-development.html">Product Development</a>
+                </nav>
+            </div>
+        </div>
+    </div>
+</header>
+
+<main class="admin-page">
+    <div class="admin-shell">
+        <section class="admin-card" id="adminAccessCard">
+            <h2>Submission Control</h2>
+            <p>Enter the employee password to access backend submission files, upload any file type, and remove files you no longer need.</p>
+            <form id="adminAccessForm" class="admin-auth-form">
+                <input id="adminAccessPassword" type="password" placeholder="Password" autocomplete="current-password" required>
+                <button id="adminAccessButton" class="admin-button" type="submit">Unlock</button>
+            </form>
+            <div id="adminAccessStatus" class="admin-status" aria-live="polite"></div>
+        </section>
+
+        <section id="adminWorkspace" class="admin-card admin-hidden">
+            <div class="admin-actions">
+                <div>
+                    <h3>Uploaded Files</h3>
+                    <p>Manage the backend submissions folder from one place.</p>
+                </div>
+                <div class="admin-toolbar">
+                    <button id="adminRefreshButton" class="admin-button admin-secondary" type="button">Refresh</button>
+                    <button id="adminLogoutButton" class="admin-button admin-secondary" type="button">Lock</button>
+                </div>
+            </div>
+
+            <form id="adminUploadForm" class="admin-upload-form">
+                <input id="adminUploadFiles" type="file" multiple>
+                <button id="adminUploadButton" class="admin-button" type="submit">Upload Files</button>
+            </form>
+
+            <div id="adminWorkspaceStatus" class="admin-status" aria-live="polite"></div>
+            <div id="adminFileList" class="admin-list"></div>
+        </section>
+
+        <section id="adminCsvCard" class="admin-card admin-hidden">
+            <div class="admin-actions">
+                <div>
+                    <h3>Print Color Options CSV</h3>
+                    <p>Update the material and color options used by the 3D printing page. Keep the first line as Material,Common colors.</p>
+                </div>
+                <div class="admin-toolbar">
+                    <button id="adminCsvReloadButton" class="admin-button admin-secondary" type="button">Reload CSV</button>
+                    <button id="adminCsvSaveButton" class="admin-button" type="button">Save CSV</button>
+                </div>
+            </div>
+
+            <textarea id="adminCsvEditor" class="admin-textarea" spellcheck="false"></textarea>
+            <div id="adminCsvStatus" class="admin-status" aria-live="polite"></div>
+        </section>
+    </div>
+</main>
+
+<script src="assets/js/lab-form-endpoints.js" defer></script>
+<script src="assets/js/admin-submissions.js" defer></script>
+<script src="assets/js/layout.js" defer></script>
+</body>
+</html>

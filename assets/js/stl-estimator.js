@@ -1,4 +1,20 @@
 (function () {
+  const ESTIMATE_COLLAPSED_STORAGE_KEY = "stlEstimateCollapsed";
+  const FDM_BUILD_VOLUME_MM = {
+    x: 256,
+    y: 256,
+    z: 256,
+  };
+
+  const SLA_BUILD_VOLUME_MM = {
+    x: 218,
+    y: 120,
+    z: 220,
+  };
+
+  const OVERSIZED_FDM_MINIMUM_USD = 50;
+  const OVERSIZED_SLA_MINIMUM_USD = 100;
+
   const UNIT_TO_MM = {
     mm: 1,
     cm: 10,
@@ -58,6 +74,28 @@
     if (material.includes("pla")) return 25;
 
     return DEFAULT_LABOR_RATE_PER_HOUR;
+  }
+
+  function getBuildConstraints(materialRaw) {
+    const material = normalizeText(materialRaw);
+
+    if (material.includes("sla") || material.includes("resin")) {
+      return {
+        label: "SLA",
+        sizeMm: SLA_BUILD_VOLUME_MM,
+        oversizedMinimumUsd: OVERSIZED_SLA_MINIMUM_USD,
+      };
+    }
+
+    return {
+      label: "FDM",
+      sizeMm: FDM_BUILD_VOLUME_MM,
+      oversizedMinimumUsd: OVERSIZED_FDM_MINIMUM_USD,
+    };
+  }
+
+  function exceedsBuildVolume(sizeMm, buildVolumeMm) {
+    return sizeMm.x > buildVolumeMm.x || sizeMm.y > buildVolumeMm.y || sizeMm.z > buildVolumeMm.z;
   }
 
   function detectBinarySTL(buffer) {
@@ -251,13 +289,48 @@
     while (el.firstChild) el.removeChild(el.firstChild);
   }
 
+  function isEstimateCollapsed() {
+    try {
+      return window.sessionStorage.getItem(ESTIMATE_COLLAPSED_STORAGE_KEY) === "true";
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function saveEstimateCollapsed(collapsed) {
+    try {
+      window.sessionStorage.setItem(ESTIMATE_COLLAPSED_STORAGE_KEY, collapsed ? "true" : "false");
+    } catch (error) {
+      console.warn("Could not persist STL estimate panel state.", error);
+    }
+  }
+
+  function applyEstimateCollapsedState(collapsed) {
+    const panel = document.getElementById("stlEstimatePanel");
+    const toggle = document.getElementById("stlEstimateToggle");
+    if (!panel || !toggle) return;
+
+    panel.classList.toggle("is-collapsed", !!collapsed);
+    toggle.textContent = collapsed ? "Expand" : "Collapse";
+    toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  }
+
+  function setEstimatePanelVisible(visible) {
+    const panel = document.getElementById("stlEstimatePanel");
+    if (!panel) return;
+    panel.classList.toggle("hidden-panel", !visible);
+    if (visible) {
+      applyEstimateCollapsedState(isEstimateCollapsed());
+    }
+  }
+
   function getMaterialValue() {
     const materialSelect = document.getElementById("material");
     if (!materialSelect) return "";
     return materialSelect.value || materialSelect.options?.[materialSelect.selectedIndex]?.text || "";
   }
 
-  function renderEstimateItem(listEl, { fileName, estimate, modelUnit, totalCostCents }) {
+  function renderEstimateItem(listEl, { fileName, estimate, modelUnit, totalCostCents, exceedsBuildVolumeLimit, buildConstraints }) {
     const item = document.createElement("div");
     item.className = "stl-estimate-item";
 
@@ -299,6 +372,19 @@
       modelUnit +
       ")</div>";
 
+    if (exceedsBuildVolumeLimit) {
+      body.innerHTML +=
+        "<div><strong>Note:</strong> This part exceeds the standard " +
+        formatNumber(buildConstraints.sizeMm.x, 0) +
+        " × " +
+        formatNumber(buildConstraints.sizeMm.y, 0) +
+        " × " +
+        formatNumber(buildConstraints.sizeMm.z, 0) +
+        " mm " +
+        buildConstraints.label +
+        " build volume and will require special handling.</div>";
+    }
+
     item.appendChild(body);
     listEl.appendChild(item);
   }
@@ -314,17 +400,24 @@
 
     const files = Array.from(fileInput.files || []);
     if (!files.length) {
-      const empty = document.createElement("div");
-      empty.className = "help";
-      empty.textContent = "Select one or more files to see STL estimates.";
-      listEl.appendChild(empty);
+      setEstimatePanelVisible(false);
       return;
     }
 
     const modelUnit = (unitSelect.value || "mm").trim();
     const settings = getDefaultEstimateSettings();
 
-    const laborRatePerHour = getLaborRatePerHourFromMaterial(getMaterialValue());
+    const materialValue = getMaterialValue();
+    const laborRatePerHour = getLaborRatePerHourFromMaterial(materialValue);
+    const buildConstraints = getBuildConstraints(materialValue);
+    const anyStl = files.some(isStlFile);
+
+    if (!anyStl) {
+      setEstimatePanelVisible(false);
+      return;
+    }
+
+    setEstimatePanelVisible(true);
 
     let totalSeconds = 0;
     let totalCostCents = 0;
@@ -340,11 +433,17 @@
         const meshRaw = parseSTL(arrayBuffer);
         const meshMm = convertMeshToMillimeters(meshRaw, modelUnit);
         const estimate = estimatePrint(meshMm, settings);
+        const exceedsBuildVolumeLimit = exceedsBuildVolume(meshMm.sizeMm, buildConstraints.sizeMm);
 
         totalSeconds += estimate.printSeconds;
 
         const laborCost = (estimate.printSeconds / 3600) * laborRatePerHour;
-        const fileTotalCostCents = toCents(estimate.materialCost + laborCost);
+        let fileTotalCostCents = toCents(estimate.materialCost + laborCost);
+
+        if (exceedsBuildVolumeLimit) {
+          fileTotalCostCents *= 2;
+          fileTotalCostCents = Math.max(fileTotalCostCents, toCents(buildConstraints.oversizedMinimumUsd));
+        }
 
         totalCostCents += fileTotalCostCents;
 
@@ -353,6 +452,8 @@
           estimate,
           modelUnit,
           totalCostCents: fileTotalCostCents,
+          exceedsBuildVolumeLimit,
+          buildConstraints,
         });
       } catch (err) {
         const item = document.createElement("div");
@@ -370,7 +471,6 @@
       }
     }
 
-    const anyStl = files.some(isStlFile);
     if (anyStl) {
       const total = document.createElement("div");
       total.className = "stl-estimate-item";
@@ -399,10 +499,18 @@
     const fileInput = document.getElementById("file");
     const unitSelect = document.getElementById("stlModelUnit");
     const materialSelect = document.getElementById("material");
+    const toggle = document.getElementById("stlEstimateToggle");
 
     if (fileInput) fileInput.addEventListener("change", buildEstimates);
     if (unitSelect) unitSelect.addEventListener("change", buildEstimates);
     if (materialSelect) materialSelect.addEventListener("change", buildEstimates);
+    if (toggle) {
+      toggle.addEventListener("click", function () {
+        const collapsed = !isEstimateCollapsed();
+        saveEstimateCollapsed(collapsed);
+        applyEstimateCollapsedState(collapsed);
+      });
+    }
 
     buildEstimates();
   });

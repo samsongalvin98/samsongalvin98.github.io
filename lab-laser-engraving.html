@@ -74,9 +74,29 @@
         }
 
         .page-inner {
-            max-width: 980px;
+            max-width: 1180px;
             margin: 60px auto;
             padding: 0 20px;
+        }
+
+        .laser-layout {
+            position: relative;
+        }
+
+        .laser-main {
+            min-width: 0;
+            margin-right: 330px;
+        }
+
+        .laser-side {
+            position: fixed;
+            right: 24px;
+            top: calc(var(--header-height, 80px) + 24px);
+            width: 290px;
+            max-height: calc(100vh - var(--header-height, 80px) - 48px);
+            overflow-y: auto;
+            z-index: 20;
+            transition: width 0.2s ease;
         }
 
         h2 {
@@ -84,6 +104,9 @@
             text-align: center;
             margin-bottom: 12px;
             font-size: 2rem;
+            max-width: calc(100% - 330px);
+            margin-left: 0;
+            margin-right: 0;
         }
 
         .subtitle {
@@ -91,6 +114,28 @@
             color: #d1d5db;
             margin-bottom: 28px;
             line-height: 1.6;
+            max-width: calc(100% - 330px);
+            margin-left: 0;
+            margin-right: 0;
+        }
+
+        .intro-media {
+            display: flex;
+            justify-content: center;
+            max-width: 420px;
+            margin: 0 auto 28px;
+            padding: 16px 18px;
+            border-radius: 14px;
+            background: #111827;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.22);
+        }
+
+        .intro-media img {
+            width: 100%;
+            max-width: 320px;
+            border-radius: 12px;
+            border: 1px solid rgba(229,231,235,0.14);
+            background: rgba(255,255,255,0.04);
         }
 
         .lab-nav {
@@ -130,6 +175,12 @@
             padding: 28px 26px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             margin-bottom: 26px;
+        }
+
+        .card--side {
+            background: #232b36;
+            border: 1px solid rgba(16,185,129,0.22);
+            margin-bottom: 0;
         }
 
         .notice {
@@ -224,6 +275,60 @@
             margin-top: 6px;
         }
 
+        .side-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .side-panel-title {
+            margin: 0;
+            font-weight: 700;
+            color: #e5e7eb;
+        }
+
+        .side-panel-toggle {
+            appearance: none;
+            border: 1px solid rgba(16,185,129,0.35);
+            border-radius: 10px;
+            padding: 8px 10px;
+            background: #111827;
+            color: #10b981;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .side-panel-body {
+            display: block;
+        }
+
+        .laser-side.is-collapsed {
+            width: 74px;
+            overflow: visible;
+        }
+
+        .laser-side.is-collapsed .card--side {
+            padding: 16px 10px;
+        }
+
+        .laser-side.is-collapsed .side-panel-header {
+            flex-direction: column-reverse;
+            align-items: center;
+            margin-bottom: 0;
+        }
+
+        .laser-side.is-collapsed .side-panel-title {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            letter-spacing: 0.08em;
+        }
+
+        .laser-side.is-collapsed .side-panel-body {
+            display: none;
+        }
+
         .actions {
             display: flex;
             flex-wrap: wrap;
@@ -253,6 +358,10 @@
             font-size: 0.95rem;
         }
 
+        .hidden-panel {
+            display: none;
+        }
+
         footer {
             text-align: center;
             padding: 40px;
@@ -263,8 +372,48 @@
             color: #10b981;
         }
 
+        @media (max-width: 1280px) {
+            h2,
+            .subtitle {
+                max-width: none;
+            }
+
+            .laser-main {
+                margin-right: 0;
+            }
+
+            .laser-side {
+                position: static;
+                width: auto;
+                max-height: none;
+                overflow: visible;
+                margin-bottom: 26px;
+            }
+
+            .laser-side.is-collapsed {
+                width: auto;
+            }
+
+            .laser-side.is-collapsed .side-panel-header {
+                flex-direction: row;
+                align-items: center;
+                margin-bottom: 12px;
+            }
+
+            .laser-side.is-collapsed .side-panel-title {
+                writing-mode: horizontal-tb;
+                text-orientation: mixed;
+                letter-spacing: normal;
+            }
+
+            .laser-side.is-collapsed .side-panel-body {
+                display: block;
+            }
+        }
+
         @media (max-width: 820px) {
             .grid { grid-template-columns: 1fr; }
+            .intro-media img { max-width: 100%; }
         }
     </style>
 </head>
@@ -320,96 +469,106 @@
         Submit a request for laser engraving or cutting. Upload your artwork and describe the desired size, material, and finish.
     </p>
 
-    <div class="card">
-        <div class="notice">
-            <strong>Note:</strong> This site is hosted on GitHub Pages, so uploads must go to your separate backend server.
-            Configure your backend endpoint in <strong>assets/js/lab-form-endpoints.js</strong> to enable submissions.
-        </div>
-
-        <form id="laserRequestForm" method="POST" enctype="multipart/form-data">
-            <div class="grid">
-                <div>
-                    <label for="name">Name</label>
-                    <input id="name" name="name" type="text" autocomplete="name" required>
-                </div>
-                <div>
-                    <label for="email">Email</label>
-                    <input id="email" name="email" type="email" autocomplete="email" required>
-                </div>
+    <div class="laser-layout">
+        <div class="laser-main">
+            <div class="intro-media">
+                <img src="assets/images/lasercut.png" alt="Example laser cut part">
             </div>
 
-            <div class="grid">
-                <div>
-                    <label for="quantity">Quantity</label>
-                    <input id="quantity" name="quantity" type="number" min="1" step="1" value="1" required>
-                </div>
-                <div>
-                    <label for="deadline">Needed By (optional)</label>
-                    <input id="deadline" name="deadline" type="date">
-                </div>
-            </div>
-
-            <div class="grid">
-                <div>
-                    <label for="material">Material</label>
-                    <input id="material" name="material" type="text" placeholder="Wood, acrylic, anodized aluminum..." required>
-                </div>
-                <div>
-                    <label>Target Size</label>
+            <div class="card">
+                <form id="laserRequestForm" method="POST" enctype="multipart/form-data">
                     <div class="grid">
                         <div>
-                            <label for="laserWidth" class="help">Width</label>
-                            <input id="laserWidth" name="laserWidth" type="number" min="0" step="0.01" placeholder="e.g., 2" required>
+                            <label for="name">Name</label>
+                            <input id="name" name="name" type="text" autocomplete="name" required>
                         </div>
                         <div>
-                            <label for="laserHeight" class="help">Height</label>
-                            <input id="laserHeight" name="laserHeight" type="number" min="0" step="0.01" placeholder="e.g., 1" required>
+                            <label for="email">Email</label>
+                            <input id="email" name="email" type="email" autocomplete="email" required>
                         </div>
                     </div>
-                    <div style="margin-top: 10px;">
-                        <label for="laserUnit" class="help">Units</label>
-                        <select id="laserUnit" name="laserUnit" required>
-                            <option value="in" selected>Inches (in)</option>
-                            <option value="mm">Millimeters (mm)</option>
-                            <option value="cm">Centimeters (cm)</option>
-                        </select>
+
+                    <div class="grid">
+                        <div>
+                            <label for="quantity">Quantity</label>
+                            <input id="quantity" name="quantity" type="number" min="1" step="1" value="1" required>
+                        </div>
+                        <div>
+                            <label for="deadline">Needed By (optional)</label>
+                            <input id="deadline" name="deadline" type="date">
+                        </div>
                     </div>
-                    <input id="size" name="size" type="hidden" value="">
+
+                    <div class="grid">
+                        <div>
+                            <label for="material">Material</label>
+                            <input id="material" name="material" type="text" placeholder="Wood, acrylic, anodized aluminum..." required>
+                        </div>
+                        <div>
+                            <label for="process">Process</label>
+                            <select id="process" name="process" required>
+                                <option value="Engrave">Engrave</option>
+                                <option value="Cut">Cut</option>
+                                <option value="Engrave+Cut">Engrave + Cut</option>
+                                <option value="NotSure">Not sure</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label>Target Size</label>
+                        <div class="grid">
+                            <div>
+                                <label for="laserWidth" class="help">Width</label>
+                                <input id="laserWidth" name="laserWidth" type="number" min="0" step="0.01" placeholder="e.g., 2" required>
+                            </div>
+                            <div>
+                                <label for="laserHeight" class="help">Height</label>
+                                <input id="laserHeight" name="laserHeight" type="number" min="0" step="0.01" placeholder="e.g., 1" required>
+                            </div>
+                        </div>
+                        <div style="margin-top: 10px; max-width: 220px;">
+                            <label for="laserUnit" class="help">Units</label>
+                            <select id="laserUnit" name="laserUnit" required>
+                                <option value="in" selected>Inches (in)</option>
+                                <option value="mm">Millimeters (mm)</option>
+                                <option value="cm">Centimeters (cm)</option>
+                            </select>
+                        </div>
+                        <input id="size" name="size" type="hidden" value="">
+                    </div>
+
+                    <div>
+                        <label for="file">Artwork / File</label>
+                        <input id="file" name="file" type="file" accept=".svg,.dxf,.png,.jpeg,.pdf,.zip" required>
+                        <div class="help">Accepted: SVG, DXF, PNG, JPEG, PDF, ZIP.</div>
+                    </div>
+
+                    <div>
+                        <label for="notes">Notes / Requirements (optional)</label>
+                        <textarea id="notes" name="notes" placeholder="Engrave depth (if applicable), desired look, any text to include, alignment/placement notes, constraints..."></textarea>
+                    </div>
+
+                    <div class="actions">
+                        <button type="submit">Submit Request</button>
+                        <div id="status" class="status" aria-live="polite"></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <aside id="laserSidePanel" class="laser-side hidden-panel" aria-live="polite">
+            <div class="card card--side">
+                <div class="side-panel-header">
+                    <div class="side-panel-title">Uploaded Image</div>
+                    <button id="laserSideToggle" class="side-panel-toggle" type="button" aria-expanded="true" aria-controls="laserSideBody">Collapse</button>
+                </div>
+                <div id="laserSideBody" class="side-panel-body">
+                    <div id="laserPreview" class="laser-preview"></div>
+                    <div id="laserEstimate" class="laser-preview"></div>
                 </div>
             </div>
-
-            <div class="grid">
-                <div>
-                    <label for="process">Process</label>
-                    <select id="process" name="process" required>
-                        <option value="Engrave">Engrave</option>
-                        <option value="Cut">Cut</option>
-                        <option value="Engrave+Cut">Engrave + Cut</option>
-                        <option value="NotSure">Not sure</option>
-                    </select>
-                </div>
-                <div></div>
-            </div>
-
-            <div>
-                <label for="file">Artwork / File</label>
-                <input id="file" name="file" type="file" accept=".svg,.dxf,.png,.jpeg,.pdf,.zip" required>
-                <div class="help">Accepted: SVG, DXF, PNG, JPEG, PDF, ZIP.</div>
-
-                <div id="laserPreview" class="laser-preview" aria-live="polite"></div>
-                <div id="laserEstimate" class="laser-preview" aria-live="polite"></div>
-            </div>
-
-            <div>
-                <label for="notes">Notes / Requirements (optional)</label>
-                <textarea id="notes" name="notes" placeholder="Engrave depth (if applicable), desired look, any text to include, alignment/placement notes, constraints..."></textarea>
-            </div>
-
-            <div class="actions">
-                <button type="submit">Submit Request</button>
-                <div id="status" class="status" aria-live="polite"></div>
-            </div>
-        </form>
+        </aside>
     </div>
         </div>
     </main>

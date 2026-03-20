@@ -181,7 +181,7 @@
         setFallbackOnError(
           materialSelect,
           colorSelect,
-          "Materials/colors can’t load from CSV when opened as a file. Preview via http:// (local server or GitHub Pages)."
+          "Materials/colors can’t load from CSV when opened as a file."
         );
         return;
       }

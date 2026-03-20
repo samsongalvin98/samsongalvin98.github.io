@@ -14,6 +14,7 @@ REM Optional:
 REM   setx BACKEND_CORS_ORIGINS "https://your-site.github.io,http://localhost:8000"
 REM   setx SUCCESS_REDIRECT_URL "https://your-site.github.io/lab-3d-printing.html"
 REM   setx SUBMISSIONS_DIR "C:\backend-data\submissions"
+REM   setx SUBMISSIONS_ADMIN_PASSWORD "your_download_password"
 
 cd /d "%~dp0"
 

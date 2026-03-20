@@ -1,4 +1,10 @@
 (function () {
+  const LASER_BED_MM = {
+    width: 400,
+    height: 400,
+  };
+
+  const LASER_PANEL_COLLAPSED_STORAGE_KEY = "laserSidePanelCollapsed";
   const UNIT_TO_IN = {
     in: 1,
     mm: 1 / 25.4,
@@ -14,6 +20,7 @@
   ];
 
   const DEFAULT_RATE_PER_SQIN = 0.55;
+  const OVERSIZED_LASER_MINIMUM_USD = 50;
 
   const PROCESS_MULTIPLIER = {
     Engrave: 1,
@@ -36,6 +43,41 @@
 
   function clearEl(el) {
     while (el.firstChild) el.removeChild(el.firstChild);
+  }
+
+  function isLaserPanelCollapsed() {
+    try {
+      return window.sessionStorage.getItem(LASER_PANEL_COLLAPSED_STORAGE_KEY) === "true";
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function saveLaserPanelCollapsed(collapsed) {
+    try {
+      window.sessionStorage.setItem(LASER_PANEL_COLLAPSED_STORAGE_KEY, collapsed ? "true" : "false");
+    } catch (error) {
+      console.warn("Could not persist laser side panel state.", error);
+    }
+  }
+
+  function applyLaserPanelCollapsedState(collapsed) {
+    const panel = document.getElementById("laserSidePanel");
+    const toggle = document.getElementById("laserSideToggle");
+    if (!panel || !toggle) return;
+
+    panel.classList.toggle("is-collapsed", !!collapsed);
+    toggle.textContent = collapsed ? "Expand" : "Collapse";
+    toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  }
+
+  function setLaserPanelVisible(visible) {
+    const panel = document.getElementById("laserSidePanel");
+    if (!panel) return;
+    panel.classList.toggle("hidden-panel", !visible);
+    if (visible) {
+      applyLaserPanelCollapsedState(isLaserPanelCollapsed());
+    }
   }
 
   function normalizeText(value) {
@@ -63,6 +105,16 @@
   function parseIntSafe(value, fallback = 1) {
     const n = Number.parseInt(value, 10);
     return Number.isFinite(n) && n > 0 ? n : fallback;
+  }
+
+  function toMillimeters(value, unit) {
+    if (unit === "mm") return value;
+    if (unit === "cm") return value * 10;
+    return value * 25.4;
+  }
+
+  function exceedsLaserBed(width, height, unit) {
+    return toMillimeters(width, unit) > LASER_BED_MM.width || toMillimeters(height, unit) > LASER_BED_MM.height;
   }
 
   function getSelectedFile(fileInput) {
@@ -362,12 +414,17 @@
 
     // Basic model: setup fee + area rate with a process multiplier.
     const qty = parseIntSafe(quantity, 1);
+    const oversized = exceedsLaserBed(width, height, unit);
 
     const rawUnit = SETUP_FEE_USD + areaSqIn * rate * multiplier;
-    const unitTotal = clamp(rawUnit, MINIMUM_USD, Infinity);
+    let unitTotal = clamp(rawUnit, MINIMUM_USD, Infinity);
+    if (oversized) {
+      unitTotal *= 2;
+      unitTotal = Math.max(unitTotal, OVERSIZED_LASER_MINIMUM_USD);
+    }
     const total = unitTotal * qty;
 
-    return { areaSqIn, ratePerSqIn: rate, multiplier, totalUsd: total, quantity: qty };
+    return { areaSqIn, ratePerSqIn: rate, multiplier, totalUsd: total, quantity: qty, oversized };
   }
 
   function updateUi() {
@@ -421,6 +478,7 @@
       msg.className = "help";
       msg.textContent = "Enter width and height to see an estimate.";
       estimateEl.appendChild(msg);
+      setLaserPanelVisible(!!getSelectedFile(fileInput));
       return;
     }
 
@@ -438,9 +496,17 @@
     line3.className = "laser-estimate-line";
     line3.innerHTML = `<strong>Quantity:</strong> ${result.quantity}`;
 
+    const line4 = document.createElement("div");
+    line4.className = "laser-estimate-line";
+    if (result.oversized) {
+      line4.innerHTML = "<strong>Note:</strong> This job exceeds the standard 400 × 400 mm laser bed and will require special handling.";
+    }
+
     estimateEl.appendChild(line1);
     estimateEl.appendChild(line2);
     estimateEl.appendChild(line3);
+    if (result.oversized) estimateEl.appendChild(line4);
+    setLaserPanelVisible(true);
   }
 
   document.addEventListener("DOMContentLoaded", function () {
@@ -453,6 +519,7 @@
     const quantityInput = document.getElementById("quantity");
 
     const fileInput = document.getElementById("file");
+    const toggle = document.getElementById("laserSideToggle");
 
     if (materialInput) materialInput.addEventListener("input", updateUi);
     if (processSelect) processSelect.addEventListener("change", updateUi);
@@ -463,7 +530,15 @@
     if (quantityInput) quantityInput.addEventListener("input", updateUi);
 
     if (fileInput) fileInput.addEventListener("change", updateUi);
+    if (toggle) {
+      toggle.addEventListener("click", function () {
+        const collapsed = !isLaserPanelCollapsed();
+        saveLaserPanelCollapsed(collapsed);
+        applyLaserPanelCollapsedState(collapsed);
+      });
+    }
 
+    setLaserPanelVisible(false);
     updateUi();
   });
 })();

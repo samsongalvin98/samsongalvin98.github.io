@@ -93,6 +93,25 @@
             line-height: 1.6;
         }
 
+        .intro-media {
+            display: flex;
+            justify-content: center;
+            max-width: 420px;
+            margin: 0 auto 28px;
+            padding: 16px 18px;
+            border-radius: 14px;
+            background: #111827;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.22);
+        }
+
+        .intro-media img {
+            width: 100%;
+            max-width: 320px;
+            border-radius: 12px;
+            border: 1px solid rgba(229,231,235,0.14);
+            background: rgba(255,255,255,0.04);
+        }
+
         .lab-nav {
             display: flex;
             flex-wrap: wrap;
@@ -192,6 +211,12 @@
             margin-top: 14px;
         }
 
+        .ai-chat-intro {
+            color: #9ca3af;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
         .ai-chat-messages {
             background: #232b36;
             border-radius: 12px;
@@ -281,6 +306,8 @@
 
         @media (max-width: 820px) {
             .grid { grid-template-columns: 1fr; }
+            .intro-media img { max-width: 100%; }
+            .ai-chat-compose { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -336,13 +363,15 @@
         Use this form for general prototyping and product development help (CAD, mechanisms, test fixtures, small builds, design iteration).
     </p>
 
-    <div class="card">
-        <div class="notice">
-            <strong>Note:</strong> This site is hosted on GitHub Pages, so uploads must go to your separate backend server.
-            Configure your backend endpoint in <strong>assets/js/lab-form-endpoints.js</strong> to enable submissions.
-        </div>
+    <div class="intro-media">
+        <img src="assets/images/productdev.png" alt="Example product development work">
+    </div>
 
+    <div class="card">
         <form id="devRequestForm" method="POST" enctype="multipart/form-data">
+            <input id="requestType" name="requestType" type="hidden" value="General">
+            <input id="aiConversation" name="aiConversation" type="hidden" value="[]">
+
             <div class="grid">
                 <div>
                     <label for="name">Name</label>
@@ -366,17 +395,6 @@
             </div>
 
             <div>
-                <label for="requestType">Request Type</label>
-                <select id="requestType" name="requestType" required>
-                    <option value="CAD">CAD / DFM</option>
-                    <option value="PrototypeBuild">Prototype build</option>
-                    <option value="TestFixture">Test fixture / jig</option>
-                    <option value="Mechanism">Mechanism design</option>
-                    <option value="General">General product development</option>
-                </select>
-            </div>
-
-            <div>
                 <label for="file">Files (optional)</label>
                 <input id="file" name="file" type="file" accept=".pdf,.zip" multiple>
                 <div class="help">Upload a PDF brief or a ZIP package of requirements and reference material.</div>
@@ -388,28 +406,27 @@
             </div>
 
             <div class="actions">
+                <button id="aiChatSend" type="button">AI Send Message</button>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 10px; color: #10b981;">AI Quick Quote</h3>
+                <div class="ai-chat-intro">
+                    Use the Project Description field above for both your request details and AI messages. AI replies will appear here.
+                </div>
+
+                <div class="ai-chat">
+                    <div id="aiChatMessages" class="ai-chat-messages" aria-live="polite"></div>
+
+                    <div id="aiChatStatus" class="status" aria-live="polite"></div>
+                </div>
+            </div>
+
+            <div class="actions">
                 <button type="submit">Submit Request</button>
                 <div id="status" class="status" aria-live="polite"></div>
             </div>
         </form>
-    </div>
-
-    <div class="card">
-        <h3 style="margin-bottom: 10px; color: #10b981;">AI Quick Quote (Approx.)</h3>
-        <div class="help">
-            This chat can provide a rough quote range quickly. It uses the same separate backend server to keep the API key private.
-        </div>
-
-        <div class="ai-chat">
-            <div id="aiChatMessages" class="ai-chat-messages" aria-live="polite"></div>
-
-            <div class="ai-chat-compose">
-                <textarea id="aiChatInput" placeholder="Describe your idea, target size, materials, quantity, and what you want built..."></textarea>
-                <button id="aiChatSend" type="button">Send</button>
-            </div>
-
-            <div id="aiChatStatus" class="status" aria-live="polite"></div>
-        </div>
     </div>
         </div>
     </main>
