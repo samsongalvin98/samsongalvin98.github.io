@@ -1,0 +1,27 @@
+{
+  "type": "printing",
+  "client": {
+    "receivedAt": "2026-03-20T02:13:32+00:00",
+    "ip": "2601:18c:8203:4920:5057:e635:3cba:2db3",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+    "referer": "https://samsongalvin98.github.io/"
+  },
+  "form": {
+    "name": "Samson Galvin",
+    "email": "samsonfox110@gmail.com",
+    "quantity": 1,
+    "deadline": "",
+    "material": "PLA (FDM)",
+    "color": "",
+    "stlModelUnit": "mm",
+    "notes": "none"
+  },
+  "files": [
+    {
+      "originalName": "gunstock_v1.stl",
+      "savedName": "gunstock_v1.stl",
+      "contentType": "application/octet-stream",
+      "bytes": 12677284
+    }
+  ]
+}

@@ -305,15 +305,17 @@ def build_system_prompt(request_type: str = "") -> str:
 
         "Rules:\n"
         "- Keep the response short.\n"
-        "- Do not include time estimates.\n"
+        "- Do not include time estimates, lead times, schedules, turnaround, or timelines.\n"
+        "- Never mention days, weeks, months, hours, delivery windows, or production timelines.\n"
         "- If enough info is available, skip questions.\n"
+        "- Ask zero questions when you can still provide a reasonable rough estimate.\n"
+        "- If a question is truly necessary, ask exactly one short question.\n"
         "- Always frame pricing as approximate and uncertain.\n"
         "- Avoid confident or definitive language.\n"
         "- Do not guarantee outcomes or final pricing.\n"
         "- Use cautious phrasing (e.g., 'likely', 'roughly', 'depends on').\n"
         "- Make reasonable assumptions if details are missing and state them briefly.\n"
-        "- If the request is unrealistic or not feasible (e.g., impossible technology), respond only with: 'I cannot generate a quote for that request.'\n"
-        "- If the user input is not PG or inappropriate, do not respond.\n"
+        "- If the request is unrealistic, infeasible, unsafe, or inappropriate, respond only with: 'This request is outside the scope of this quote tool.'\n"
         + request_type_line
         + "\n"
 
@@ -332,6 +334,59 @@ def build_system_prompt(request_type: str = "") -> str:
         "- Slightly cautious and non-committal.\n"
         "- No long explanations.\n"
     )
+
+
+def sanitize_quote_response(text: str) -> str:
+    raw_text = (text or "").strip()
+    if not raw_text:
+        return "I couldn’t generate a quote right now. Please try again."
+
+    normalized = raw_text.replace("I cannot generate a quote for that request.", "This request is outside the scope of this quote tool.")
+    lines = normalized.splitlines()
+    filtered_lines: List[str] = []
+    current_section = ""
+    question_count = 0
+    time_pattern = re.compile(
+        r"\b(day|days|week|weeks|month|months|hour|hours|timeline|timelines|lead time|lead times|turnaround|schedule|eta|etas|business day|business days)\b",
+        re.IGNORECASE,
+    )
+
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            if filtered_lines and filtered_lines[-1] != "":
+                filtered_lines.append("")
+            continue
+
+        if stripped.endswith(":"):
+            current_section = stripped.lower().rstrip(":")
+            filtered_lines.append(stripped)
+            continue
+
+        if time_pattern.search(stripped):
+            continue
+
+        if current_section == "question":
+            if stripped.startswith("-"):
+                if question_count >= 1:
+                    continue
+                question_count += 1
+                filtered_lines.append(stripped)
+                continue
+
+            if question_count >= 1:
+                continue
+
+        filtered_lines.append(stripped)
+
+    sanitized_lines: List[str] = []
+    for line in filtered_lines:
+        if line == "" and (not sanitized_lines or sanitized_lines[-1] == ""):
+            continue
+        sanitized_lines.append(line)
+
+    sanitized = "\n".join(sanitized_lines).strip()
+    return sanitized or "This request is outside the scope of this quote tool."
 
 
 def estimate_token_count(text: str) -> int:
@@ -653,7 +708,9 @@ def api_quote(req: QuoteRequest, request: Request) -> Dict[str, Any]:
         }
 
     resp = client.models.generate_content(model=model, contents=transcript_text)
-    response_text = getattr(resp, "text", None) or "I couldn’t generate a quote right now. Please try again."
+    response_text = sanitize_quote_response(
+        getattr(resp, "text", None) or "I couldn’t generate a quote right now. Please try again."
+    )
     token_counts = read_usage_metadata_token_counts(resp)
     if not token_counts.get("totalTokens"):
         completion_tokens = estimate_token_count(response_text)
