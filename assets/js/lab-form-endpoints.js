@@ -7,7 +7,7 @@
 //
 // Leave an endpoint blank to disable that form submission.
 
-window.LAB_FORM_BASE_URL = "https://any-myth-timothy-guides.trycloudflare.com"; //temp site 
+window.LAB_FORM_BASE_URL = "https://dayton-combo-readings-bunch.trycloudflare.com   "; //temp site 
 
 (function configureLabFormEndpoints() {
   const baseUrl = (window.LAB_FORM_BASE_URL || "").trim().replace(/\/$/, "");
