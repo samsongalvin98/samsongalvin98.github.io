@@ -261,6 +261,50 @@
             align-items: start;
         }
 
+        .ai-admin-popup {
+            position: fixed;
+            left: 50%;
+            bottom: 20px;
+            transform: translateX(-50%);
+            width: min(640px, calc(100% - 24px));
+            padding: 14px;
+            border-radius: 14px;
+            background: rgba(17, 24, 39, 0.96);
+            border: 1px solid rgba(16,185,129,0.45);
+            box-shadow: 0 16px 36px rgba(0,0,0,0.35);
+            z-index: 1000;
+        }
+
+        .ai-admin-popup[hidden] {
+            display: none;
+        }
+
+        .ai-admin-popup-title {
+            color: #10b981;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .ai-admin-popup-text {
+            color: #d1d5db;
+            font-size: 0.95rem;
+            line-height: 1.45;
+            margin-bottom: 10px;
+        }
+
+        .ai-admin-popup-actions {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .ai-admin-popup-status {
+            color: #9ca3af;
+            font-size: 0.9rem;
+            margin-top: 8px;
+        }
+
         .ai-chat-compose textarea {
             min-height: 70px;
         }
@@ -308,6 +352,7 @@
             .grid { grid-template-columns: 1fr; }
             .intro-media img { max-width: 100%; }
             .ai-chat-compose { grid-template-columns: 1fr; }
+            .ai-admin-popup-actions { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -386,7 +431,7 @@
             <div class="grid">
                 <div>
                     <label for="org">Organization (optional)</label>
-                    <input id="org" name="org" type="text" placeholder="Company / team / class">
+                        <input id="org" name="org" type="text" placeholder="Organization">
                 </div>
                 <div>
                     <label for="timeline">Timeline (optional)</label>
@@ -397,7 +442,7 @@
             <div>
                 <label for="file">Files (optional)</label>
                 <input id="file" name="file" type="file" accept=".pdf,.zip" multiple>
-                <div class="help">Upload a PDF brief or a ZIP package of requirements and reference material.</div>
+                <div class="help">Upload a PDF or ZIP package if necessary.</div>
             </div>
 
             <div>
@@ -405,18 +450,19 @@
                 <textarea id="notes" name="notes" placeholder="What are you trying to build? Constraints (size, budget, materials), current state, what you want help with, any reference links..." required></textarea>
             </div>
 
-            <div class="actions">
-                <button id="aiChatSend" type="button">AI Send Message</button>
-            </div>
-
             <div class="card">
                 <h3 style="margin-bottom: 10px; color: #10b981;">AI Quick Quote</h3>
                 <div class="ai-chat-intro">
-                    Use the Project Description field above for both your request details and AI messages. AI replies will appear here.
+                    Use the box below to send AI follow-up messages. Replies will appear in this same panel.
                 </div>
 
                 <div class="ai-chat">
                     <div id="aiChatMessages" class="ai-chat-messages" aria-live="polite"></div>
+
+                    <div class="ai-chat-compose">
+                        <textarea id="aiChatInput" placeholder="Ask a follow-up question or continue the quote conversation here..."></textarea>
+                        <button id="aiChatSend" type="button">AI Send Message</button>
+                    </div>
 
                     <div id="aiChatStatus" class="status" aria-live="polite"></div>
                 </div>
@@ -430,6 +476,17 @@
     </div>
         </div>
     </main>
+</div>
+
+<div id="aiAdminPopup" class="ai-admin-popup" hidden>
+    <div class="ai-admin-popup-title">Admin Reset Required</div>
+    <div class="ai-admin-popup-text">Input admin password to reset token count and continue this AI quote.</div>
+    <div class="ai-admin-popup-actions">
+        <input id="aiAdminPassword" type="password" placeholder="Admin password" autocomplete="current-password">
+        <button id="aiAdminResetButton" type="button">Reset and Continue</button>
+        <button id="aiAdminCancelButton" type="button">Dismiss</button>
+    </div>
+    <div id="aiAdminPopupStatus" class="ai-admin-popup-status" aria-live="polite"></div>
 </div>
 
 <footer>

@@ -124,6 +124,18 @@
             margin-top: 18px;
         }
 
+        .admin-submission-group {
+            display: grid;
+            gap: 10px;
+            padding: 14px;
+            border-radius: 18px;
+            border: 1px solid var(--submission-accent, rgba(255,255,255,0.08));
+            background:
+                linear-gradient(180deg, var(--submission-tint-strong, rgba(255,255,255,0.06)), rgba(17,24,39,0.56)),
+                rgba(255,255,255,0.02);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 12px 30px rgba(0,0,0,0.18);
+        }
+
         .admin-item,
         .admin-empty {
             display: flex;
@@ -134,6 +146,97 @@
             border-radius: 14px;
             background: rgba(255,255,255,0.04);
             border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .admin-submission-group .admin-item {
+            border-color: var(--submission-border, rgba(255,255,255,0.08));
+        }
+
+        .admin-group-header {
+            border-left: 4px solid var(--submission-accent, #10b981);
+            background: linear-gradient(135deg, var(--submission-tint-strong, rgba(255,255,255,0.08)), rgba(17,24,39,0.88));
+            box-shadow: 0 0 0 1px var(--submission-border, rgba(255,255,255,0.08));
+        }
+
+        .admin-group-body {
+            display: grid;
+            gap: 10px;
+            margin-left: 12px;
+            padding-left: 16px;
+            border-left: 1px dashed var(--submission-border, rgba(255,255,255,0.14));
+        }
+
+        .admin-group-path {
+            margin-bottom: 6px;
+            color: #d1d5db;
+            font-size: 0.88rem;
+            letter-spacing: 0.02em;
+        }
+
+        .admin-group-file {
+            position: relative;
+            padding-left: 18px;
+        }
+
+        .admin-group-file::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 12px;
+            bottom: 12px;
+            width: 4px;
+            border-radius: 999px;
+            background: var(--submission-accent, #10b981);
+            opacity: 0.9;
+        }
+
+        .admin-group-file.is-metadata {
+            background: var(--submission-meta-bg, rgba(56,189,248,0.12));
+            border-color: var(--submission-meta-border, rgba(56,189,248,0.3));
+            box-shadow: inset 0 0 0 1px var(--submission-meta-border, rgba(56,189,248,0.2));
+        }
+
+        .admin-group-file.is-upload {
+            background: var(--submission-file-bg, rgba(255,255,255,0.04));
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+        }
+
+        .admin-item-type {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.76rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #f9fafb;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .admin-item-type.is-metadata {
+            background: rgba(14,165,233,0.18);
+            border-color: rgba(56,189,248,0.36);
+            color: #bae6fd;
+        }
+
+        .admin-item-type.is-upload {
+            background: rgba(250,204,21,0.14);
+            border-color: rgba(250,204,21,0.28);
+            color: #fef08a;
+        }
+
+        .admin-item-type.is-folder {
+            background: rgba(52,211,153,0.18);
+            border-color: rgba(52,211,153,0.34);
+            color: #d1fae5;
+        }
+
+        .admin-item-name {
+            text-shadow: 0 1px 0 rgba(0,0,0,0.24);
         }
 
         .admin-item-info {
@@ -218,7 +321,7 @@
     <div class="admin-shell">
         <section class="admin-card" id="adminAccessCard">
             <h2>Submission Control</h2>
-            <p>Enter the employee password to access backend submission files, upload any file type, and remove files you no longer need.</p>
+            <p>Enter the employee password to access submission folders, review each folder's metadata.json and uploaded files, delete individual files, or remove an entire folder.</p>
             <form id="adminAccessForm" class="admin-auth-form">
                 <input id="adminAccessPassword" type="password" placeholder="Password" autocomplete="current-password" required>
                 <button id="adminAccessButton" class="admin-button" type="submit">Unlock</button>
@@ -230,7 +333,7 @@
             <div class="admin-actions">
                 <div>
                     <h3>Uploaded Files</h3>
-                    <p>Manage the backend submissions folder from one place.</p>
+                    <p>Each submission folder is listed first, with its metadata.json and uploaded files nested underneath.</p>
                 </div>
                 <div class="admin-toolbar">
                     <button id="adminRefreshButton" class="admin-button admin-secondary" type="button">Refresh</button>
@@ -261,6 +364,26 @@
 
             <textarea id="adminCsvEditor" class="admin-textarea" spellcheck="false"></textarea>
             <div id="adminCsvStatus" class="admin-status" aria-live="polite"></div>
+        </section>
+
+        <section id="adminAiUsageCard" class="admin-card admin-hidden">
+            <div class="admin-actions">
+                <div>
+                    <h3>AI Token Usage</h3>
+                    <p>Review today&rsquo;s AI quote users and reset token usage for a specific user.</p>
+                </div>
+                <div class="admin-toolbar">
+                    <button id="adminAiUsageRefreshButton" class="admin-button admin-secondary" type="button">Refresh Usage</button>
+                </div>
+            </div>
+
+            <form id="adminAiUsageResetForm" class="admin-auth-form">
+                <input id="adminAiUsageUser" type="text" placeholder="User IP or ID from the usage list" autocomplete="off" required>
+                <button id="adminAiUsageResetButton" class="admin-button" type="submit">Reset User Tokens</button>
+            </form>
+
+            <div id="adminAiUsageStatus" class="admin-status" aria-live="polite"></div>
+            <div id="adminAiUsageList" class="admin-list"></div>
         </section>
     </div>
 </main>

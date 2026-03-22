@@ -60,6 +60,9 @@
       try {
         const response = await fetch(endpoint, {
           method: "POST",
+          headers: {
+            "Accept": "application/json",
+          },
           body: new FormData(form),
         });
 
@@ -72,7 +75,7 @@
         setStatus(statusEl, "Request submitted.");
       } catch (error) {
         console.error("Lab form submission failed", error);
-        setStatus(statusEl, "Submission failed, website not accepting submissions at this time.");
+        setStatus(statusEl, error && error.message ? error.message : "Submission failed, website not accepting submissions at this time.");
       } finally {
         setButtonBusy(submitButton, false);
       }

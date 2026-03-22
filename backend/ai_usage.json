@@ -1,0 +1,22 @@
+{
+  "days": {
+    "2026-03-21": {
+      "users": {},
+      "updatedAt": "2026-03-21T15:23:50+00:00"
+    },
+    "2026-03-22": {
+      "users": {
+        "2601:18c:8203:4920:d911:22cf:a131:b94c": {
+          "promptTokens": 759,
+          "candidatesTokens": 105,
+          "totalTokens": 2178,
+          "requestCount": 1,
+          "lastRequestType": "General",
+          "lastModel": "gemini-3-flash-preview",
+          "updatedAt": "2026-03-22T14:28:59+00:00"
+        }
+      },
+      "updatedAt": "2026-03-22T14:28:59+00:00"
+    }
+  }
+}

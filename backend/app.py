@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Sequence
 
 from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 from pydantic import BaseModel
 from starlette.status import HTTP_303_SEE_OTHER
 
@@ -43,7 +43,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins or ["*"],
     allow_credentials=False,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -57,11 +57,16 @@ class QuoteRequest(BaseModel):
     message: str
     requestType: Optional[str] = ""
     history: Optional[List[ChatTurn]] = None
+    adminPassword: Optional[str] = None
 
 
 class CsvUpdateRequest(BaseModel):
     content: str
 
+
+class AiUsageResetRequest(BaseModel):
+    user: str
+    dayKey: Optional[str] = None
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
@@ -95,6 +100,21 @@ def validate_files(files: Sequence[UploadFile], allowed_extensions: set[str], la
                 status_code=400,
                 detail=f"Unsupported file type '{ext or '(none)'}'. Allowed: {allowed}",
             )
+
+
+def filter_blank_uploads(files: Optional[Sequence[UploadFile]]) -> List[UploadFile]:
+    filtered: List[UploadFile] = []
+    for upload in files or []:
+        if not upload:
+            continue
+
+        filename = (upload.filename or "").strip()
+        if not filename:
+            continue
+
+        filtered.append(upload)
+
+    return filtered
 
 
 async def save_files(files: Sequence[UploadFile], target_dir: Path) -> List[Dict[str, Any]]:
@@ -135,7 +155,10 @@ def make_submission_dir(category: str) -> Path:
     return submission_dir
 
 
-def success_response(kind: str) -> Response:
+def success_response(request: Request, kind: str) -> Response:
+    if request.url.path.startswith("/api/"):
+        return JSONResponse({"status": "ok", "submitted": kind})
+
     if SUCCESS_REDIRECT_URL:
         separator = "&" if "?" in SUCCESS_REDIRECT_URL else "?"
         return RedirectResponse(
@@ -176,6 +199,16 @@ def require_admin_password(password: Optional[str]) -> None:
         raise HTTPException(status_code=403, detail="Invalid password.")
 
 
+def has_valid_admin_password(password: Optional[str]) -> bool:
+    if not SUBMISSIONS_ADMIN_PASSWORD:
+        return False
+
+    if not password:
+        return False
+
+    return secrets.compare_digest(password, SUBMISSIONS_ADMIN_PASSWORD)
+
+
 def list_submission_files() -> List[Dict[str, Any]]:
     if not SUBMISSIONS_DIR.exists():
         return []
@@ -186,7 +219,7 @@ def list_submission_files() -> List[Dict[str, Any]]:
             continue
 
         relative_path = path.relative_to(SUBMISSIONS_DIR)
-        if "files" not in relative_path.parts:
+        if len(relative_path.parts) < 2:
             continue
 
         stat = path.stat()
@@ -220,6 +253,31 @@ def resolve_submission_path(relative_path: str) -> Path:
     return candidate
 
 
+def resolve_submission_directory(category: str, submission_id: str) -> Path:
+    candidate = (SUBMISSIONS_DIR / category / submission_id).resolve()
+    submissions_root = SUBMISSIONS_DIR.resolve()
+
+    try:
+        candidate.relative_to(submissions_root)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="Submission folder not found.") from exc
+
+    if not candidate.is_dir():
+        raise HTTPException(status_code=404, detail="Submission folder not found.")
+
+    return candidate
+
+
+def resolve_submission_directory_from_file(relative_path: str) -> Path:
+    parts = Path(relative_path).parts
+    if len(parts) < 3:
+        raise HTTPException(status_code=404, detail="Submission folder not found.")
+
+    category = parts[0]
+    submission_id = parts[1]
+    return resolve_submission_directory(category, submission_id)
+
+
 def remove_empty_parent_dirs(path: Path) -> None:
     submissions_root = SUBMISSIONS_DIR.resolve()
     current = path.parent
@@ -230,6 +288,65 @@ def remove_empty_parent_dirs(path: Path) -> None:
         except OSError:
             break
         current = current.parent
+
+
+def list_submission_groups() -> List[Dict[str, Any]]:
+    if not SUBMISSIONS_DIR.exists():
+        return []
+
+    groups: List[Dict[str, Any]] = []
+    for category_dir in SUBMISSIONS_DIR.iterdir():
+        if not category_dir.is_dir():
+            continue
+
+        for submission_dir in category_dir.iterdir():
+            if not submission_dir.is_dir():
+                continue
+
+            file_count = 0
+            total_bytes = 0
+            latest_modified = submission_dir.stat().st_mtime
+
+            for file_path in submission_dir.rglob("*"):
+                if not file_path.is_file():
+                    continue
+
+                stat = file_path.stat()
+                file_count += 1
+                total_bytes += stat.st_size
+                latest_modified = max(latest_modified, stat.st_mtime)
+
+            groups.append(
+                {
+                    "category": category_dir.name,
+                    "submissionId": submission_dir.name,
+                    "fileCount": file_count,
+                    "bytes": total_bytes,
+                    "modifiedAt": datetime.fromtimestamp(latest_modified, timezone.utc)
+                    .replace(microsecond=0)
+                    .isoformat(),
+                }
+            )
+
+    groups.sort(key=lambda item: item["modifiedAt"], reverse=True)
+    return groups
+
+
+def delete_submission_directory(path: Path) -> None:
+    for child in sorted(path.rglob("*"), reverse=True):
+        if child.is_file() or child.is_symlink():
+            child.unlink()
+            continue
+
+        child.rmdir()
+
+    path.rmdir()
+    remove_empty_parent_dirs(path)
+
+
+def delete_submission_file(path: Path) -> None:
+    path.unlink()
+    remove_empty_parent_dirs(path)
 
 
 def read_print_color_options() -> str:
@@ -293,59 +410,110 @@ def build_system_prompt(request_type: str = "") -> str:
         "Be concise, practical, and cautiously worded.\n\n"
 
         "Shop background:\n"
-        "- Multidisciplinary experience in machine learning, mechanical engineering, mechatronics, electrical engineering, and computer engineering.\n"
+        "- Run by a mechanical/mechatronics engineer with multidisciplinary experience.\n"
+        "- Strong background in machine learning, robotics (kinematics, control), and embedded systems.\n"
+        "- Experience with Arduino, ESP32, IoT systems, and custom electronics.\n"
+        "- Skilled in CAD (SolidWorks/Fusion 360), rapid prototyping, and product design.\n"
+        "- Hands-on fabrication: 3D printing (FDM/resin), laser cutting/engraving, and basic machining.\n"
+        "- PCB design and electronics integration experience.\n"
+        "- LED systems and embedded lighting/control systems.\n"
+        "- Web development experience (frontends, APIs, device interfaces).\n"
+        "- Experience in medical device R&D environments.\n"
+        "- Designed and sold physical products (e.g., fidget toys, LED art).\n"
+        "- Holds patents and has experience with product/IP development.\n"
         "- Focus on custom, low-volume prototype and product development work.\n\n"
+
+        "Pricing philosophy:\n"
+        "- Pricing should reflect specialized, high-skill engineering work.\n"
+        "- Default toward slightly higher, professional freelance engineering rates.\n"
+        "- Complex multidisciplinary or full-system builds should skew higher.\n"
+        "- Hardware + software + integration work should be priced at a premium.\n\n"
+
+        "Royalty structure (use when project involves novel product, IP, or commercialization):\n"
+        "- Provide FOUR scenarios:\n"
+        "  1) No royalties (0%) -> highest upfront cost\n"
+        "  2) Low royalties (~3-5%) -> slightly reduced upfront cost\n"
+        "  3) Mid royalties (~5-10%) -> moderately reduced upfront cost\n"
+        "  4) High royalties (~10-20%) -> significantly reduced upfront cost\n"
+        "  5) Partnership (>20%) -> very low upfront cost, treated like shared upside\n"
+        "- Pricing should decrease progressively as royalty percentage increases.\n"
+        "- Partnership implies ongoing involvement or shared product ownership.\n"
+        "- If royalties are not relevant, provide a single estimate only.\n\n"
 
         "Primary goals:\n"
         "- Understand the request quickly.\n"
         "- Ask at most ONE essential clarifying question, only if needed.\n"
-        "- Provide a rough price range in USD.\n"
+        "- Provide rough price ranges in USD.\n"
         "- Briefly state what is included.\n"
-        "- State key assumptions.\n\n"
+        "- State key assumptions when appropriate.\n\n"
 
         "Rules:\n"
         "- Keep the response short.\n"
         "- Do not include time estimates, lead times, schedules, turnaround, or timelines.\n"
-        "- Never mention days, weeks, months, hours, delivery windows, or production timelines.\n"
+        "- Never mention days, weeks, months, hours, delivery windows, or timelines.\n"
         "- If enough info is available, skip questions.\n"
-        "- Ask zero questions when you can still provide a reasonable rough estimate.\n"
-        "- If a question is truly necessary, ask exactly one short question.\n"
+        "- Ask zero questions when a reasonable estimate can still be given.\n"
+        "- If there is not enough information, ask exactly one short question and stop.\n"
+        "- Do not make assumptions when key project details are missing.\n"
+        "- Only include assumptions when enough detail is present.\n"
         "- Always frame pricing as approximate and uncertain.\n"
         "- Avoid confident or definitive language.\n"
-        "- Do not guarantee outcomes or final pricing.\n"
-        "- Use cautious phrasing (e.g., 'likely', 'roughly', 'depends on').\n"
-        "- Make reasonable assumptions if details are missing and state them briefly.\n"
-        "- If the request is unrealistic, infeasible, unsafe, or inappropriate, respond only with: 'This request is outside the scope of this quote tool.'\n"
+        "- Never invent missing scope or requirements.\n"
+        "- If the request is unrealistic or unsafe, respond only with: 'This request is outside the scope of this quote tool.'\n"
         + request_type_line
         + "\n"
 
         "Output format:\n"
         "Question:\n"
-        "- 0 or 1 short bullet (only if critical)\n\n"
+        "- 0 or 1 short bullet (only if critical)\n"
+        "- If insufficient info, ask one question and STOP\n\n"
+
         "Estimate:\n"
-        "- 1 to 3 short bullets\n"
-        "- Include approximate USD range\n"
-        "- Include what the estimate likely covers\n\n"
+        "- If royalties apply:\n"
+        "  • No royalties:\n"
+        "  • Low royalties (3-5%):\n"
+        "  • High royalties (20-40%):\n"
+        "- Each option: 1 short bullet with USD range + what it covers\n"
+        "- If royalties do NOT apply: 1-3 bullets total\n\n"
+
         "Assumptions:\n"
-        "- 1 to 3 short bullets\n\n"
+        "- 1 to 3 short bullets\n"
+        "- Only include if enough detail exists\n\n"
 
         "Tone:\n"
-        "- Short, clear, and practical.\n"
-        "- Slightly cautious and non-committal.\n"
-        "- No long explanations.\n"
+        "- Short, clear, and practical\n"
+        "- Slightly cautious and non-committal\n"
+        "- No long explanations\n"
     )
 
 
-def sanitize_quote_response(text: str) -> str:
-    raw_text = (text or "").strip()
+        "- Do not include time estimates, schedules, or timelines.\n"
+        "- Never mention hours, days, weeks, or delivery timing.\n"
     if not raw_text:
         return "I couldn’t generate a quote right now. Please try again."
+        "- If insufficient information, ask exactly one short question and stop.\n"
+    money_matches = re.findall(r"\$\s*(\d[\d,]*(?:\.\d+)?)\s*([kKmM]?)", normalized)
+    if money_matches:
+        max_amount = 0.0
+        "- Avoid definitive language.\n"
+            amount = float(amount_text.replace(",", ""))
 
-    normalized = raw_text.replace("I cannot generate a quote for that request.", "This request is outside the scope of this quote tool.")
-    lines = normalized.splitlines()
-    filtered_lines: List[str] = []
+            if suffix.lower() == "k":
+                amount *= 1_000
+            elif suffix.lower() == "m":
+                amount *= 1_000_000
+
+            max_amount = max(max_amount, amount)
+
+        if max_amount > 500_000:
+        "- If royalties apply, use this structure:\n"
+        "  • No royalties (0%):\n"
+        "  • Low royalties (3-5%):\n"
+        "  • Mid royalties (5-10%):\n"
+        "  • High royalties (10-20%):\n"
+        "  • Partnership (>20%):\n"
     current_section = ""
-    question_count = 0
+        "- If royalties do NOT apply: 1-3 bullets total\n\n"
     time_pattern = re.compile(
         r"\b(day|days|week|weeks|month|months|hour|hours|timeline|timelines|lead time|lead times|turnaround|schedule|eta|etas|business day|business days)\b",
         re.IGNORECASE,
@@ -427,6 +595,72 @@ def get_daily_usage_snapshot(user_key: str) -> Dict[str, Any]:
     }
 
 
+def get_usage_log() -> Dict[str, Any]:
+    usage_log = read_json_file(AI_USAGE_LOG_PATH, {})
+    return usage_log if isinstance(usage_log, dict) else {}
+
+
+def list_ai_usage_users(day_key: Optional[str] = None) -> Dict[str, Any]:
+    usage_log = get_usage_log()
+    resolved_day_key = day_key or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    days = usage_log.get("days") if isinstance(usage_log, dict) else {}
+    day_entry = days.get(resolved_day_key) if isinstance(days, dict) else {}
+    users = day_entry.get("users") if isinstance(day_entry, dict) else {}
+
+    rows: List[Dict[str, Any]] = []
+    if isinstance(users, dict):
+        for user_key, entry in users.items():
+            if not isinstance(entry, dict):
+                continue
+
+            rows.append(
+                {
+                    "user": user_key,
+                    "promptTokens": int(entry.get("promptTokens", 0) or 0),
+                    "candidatesTokens": int(entry.get("candidatesTokens", 0) or 0),
+                    "totalTokens": int(entry.get("totalTokens", 0) or 0),
+                    "requestCount": int(entry.get("requestCount", 0) or 0),
+                    "lastRequestType": str(entry.get("lastRequestType", "") or ""),
+                    "lastModel": str(entry.get("lastModel", "") or ""),
+                    "updatedAt": str(entry.get("updatedAt", "") or ""),
+                }
+            )
+
+    rows.sort(key=lambda item: (item["totalTokens"], item["updatedAt"]), reverse=True)
+    return {
+        "dayKey": resolved_day_key,
+        "users": rows,
+        "dailyLimit": AI_DAILY_TOKEN_LIMIT,
+        "logPath": str(AI_USAGE_LOG_PATH),
+        "updatedAt": str(day_entry.get("updatedAt", "") or "") if isinstance(day_entry, dict) else "",
+    }
+
+
+def reset_ai_usage_user(user_key: str, day_key: Optional[str] = None) -> Dict[str, Any]:
+    target_user = (user_key or "").strip()
+    if not target_user:
+        raise HTTPException(status_code=400, detail="User is required.")
+
+    usage_log = get_usage_log()
+    resolved_day_key = day_key or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    days = usage_log.get("days")
+    if not isinstance(days, dict):
+        raise HTTPException(status_code=404, detail="No AI usage data found.")
+
+    day_entry = days.get(resolved_day_key)
+    if not isinstance(day_entry, dict):
+        raise HTTPException(status_code=404, detail="No AI usage data found for that day.")
+
+    users = day_entry.get("users")
+    if not isinstance(users, dict) or target_user not in users:
+        raise HTTPException(status_code=404, detail="User not found in AI usage log.")
+
+    del users[target_user]
+    day_entry["updatedAt"] = now_iso()
+    write_json_file(AI_USAGE_LOG_PATH, usage_log)
+    return {"status": "reset", "user": target_user, "dayKey": resolved_day_key}
+
+
 def get_user_used_tokens_today(user_key: str) -> int:
     snapshot = get_daily_usage_snapshot(user_key)
     user_entry = snapshot["userEntry"]
@@ -480,7 +714,7 @@ def health() -> Dict[str, str]:
 @app.get("/api/admin/submissions")
 def admin_submissions(x_admin_password: Optional[str] = Header(None, alias="X-Admin-Password")) -> Dict[str, Any]:
     require_admin_password(x_admin_password)
-    return {"files": list_submission_files()}
+    return {"files": list_submission_files(), "groups": list_submission_groups()}
 
 
 @app.get("/api/admin/submissions/download")
@@ -511,8 +745,19 @@ def admin_delete_submission(
 ) -> Dict[str, str]:
     require_admin_password(x_admin_password)
     target = resolve_submission_path(path)
-    target.unlink()
-    remove_empty_parent_dirs(target)
+    delete_submission_file(target)
+    return {"status": "deleted"}
+
+
+@app.delete("/api/admin/submission-folders")
+def admin_delete_submission_folder(
+    category: str,
+    submission_id: str,
+    x_admin_password: Optional[str] = Header(None, alias="X-Admin-Password"),
+) -> Dict[str, str]:
+    require_admin_password(x_admin_password)
+    target = resolve_submission_directory(category, submission_id)
+    delete_submission_directory(target)
     return {"status": "deleted"}
 
 
@@ -533,6 +778,24 @@ def admin_update_print_color_options(
     validated = validate_print_color_options(payload.content)
     PRINT_COLOR_OPTIONS_PATH.write_text(validated, encoding="utf-8")
     return {"status": "saved"}
+
+
+@app.get("/api/admin/ai-usage")
+def admin_get_ai_usage(
+    day_key: Optional[str] = None,
+    x_admin_password: Optional[str] = Header(None, alias="X-Admin-Password"),
+) -> Dict[str, Any]:
+    require_admin_password(x_admin_password)
+    return list_ai_usage_users(day_key)
+
+
+@app.delete("/api/admin/ai-usage")
+def admin_reset_ai_usage(
+    payload: AiUsageResetRequest,
+    x_admin_password: Optional[str] = Header(None, alias="X-Admin-Password"),
+) -> Dict[str, Any]:
+    require_admin_password(x_admin_password)
+    return reset_ai_usage_user(payload.user, payload.dayKey)
 
 
 @app.post("/api/print-request")
@@ -569,7 +832,7 @@ async def print_request(
             "files": files,
         },
     )
-    return success_response("printing")
+    return success_response(request, "printing")
 
 
 @app.post("/api/laser-request")
@@ -612,7 +875,7 @@ async def laser_request(
             "files": files,
         },
     )
-    return success_response("laser")
+    return success_response(request, "laser")
 
 
 @app.post("/api/product-request")
@@ -627,7 +890,7 @@ async def product_request(
     aiConversation: Optional[str] = Form(None),
     uploaded_files: Optional[List[UploadFile]] = File(None, alias="file"),
 ) -> Response:
-    uploads = uploaded_files or []
+    uploads = filter_blank_uploads(uploaded_files)
     if uploads:
         validate_files(uploads, FILE_RULES["product"], "product development request")
 
@@ -668,11 +931,31 @@ async def product_request(
             "files": files,
         },
     )
-    return success_response("product")
+    return success_response(request, "product")
 
 
 @app.post("/api/quote")
 def api_quote(req: QuoteRequest, request: Request) -> Dict[str, Any]:
+    user_key = get_request_ip(request)
+    raw_message = (req.message or "").strip()
+    if raw_message and has_valid_admin_password(raw_message):
+        usage_snapshot = get_daily_usage_snapshot(user_key)
+        reset_ai_usage_user(user_key, usage_snapshot["dayKey"])
+        return {
+            "text": "Token count reset. Send your next message when ready.",
+            "usage": {
+                "user": user_key,
+                "todayTotalTokens": 0,
+                "requestCountToday": 0,
+                "dailyLimit": AI_DAILY_TOKEN_LIMIT,
+                "remainingTokens": AI_DAILY_TOKEN_LIMIT,
+                "logPath": str(AI_USAGE_LOG_PATH),
+                "adminOverrideUsed": True,
+                "adminResetUsed": True,
+                "adminResetCommandUsed": True,
+            },
+        }
+
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         return {"text": "Server is missing GEMINI_API_KEY."}
@@ -681,7 +964,6 @@ def api_quote(req: QuoteRequest, request: Request) -> Dict[str, Any]:
 
     client = genai.Client(api_key=api_key)
     model = os.environ.get("GEMINI_MODEL", "gemini-3-flash-preview")
-    user_key = get_request_ip(request)
 
     transcript: List[str] = ["SYSTEM: " + build_system_prompt(req.requestType or "")]
     if req.history:
@@ -693,9 +975,17 @@ def api_quote(req: QuoteRequest, request: Request) -> Dict[str, Any]:
     transcript.append(f"USER: {req.message}")
     transcript_text = "\n".join(transcript)
 
+    usage_snapshot = get_daily_usage_snapshot(user_key)
     used_tokens_today = get_user_used_tokens_today(user_key)
     estimated_prompt_tokens = estimate_token_count(transcript_text)
-    if AI_DAILY_TOKEN_LIMIT and used_tokens_today + estimated_prompt_tokens > AI_DAILY_TOKEN_LIMIT:
+    is_admin_override = has_valid_admin_password(req.adminPassword)
+    admin_reset_used = False
+    if AI_DAILY_TOKEN_LIMIT and is_admin_override and used_tokens_today + estimated_prompt_tokens > AI_DAILY_TOKEN_LIMIT:
+        reset_ai_usage_user(user_key, usage_snapshot["dayKey"])
+        used_tokens_today = 0
+        admin_reset_used = True
+
+    if AI_DAILY_TOKEN_LIMIT and not is_admin_override and used_tokens_today + estimated_prompt_tokens > AI_DAILY_TOKEN_LIMIT:
         return {
             "text": "Daily AI limit reached for this user. Please try again later.",
             "usage": {
@@ -704,6 +994,8 @@ def api_quote(req: QuoteRequest, request: Request) -> Dict[str, Any]:
                 "dailyLimit": AI_DAILY_TOKEN_LIMIT,
                 "remainingTokens": max(0, AI_DAILY_TOKEN_LIMIT - used_tokens_today),
                 "logPath": str(AI_USAGE_LOG_PATH),
+                "limitReached": True,
+                "adminOverrideAvailable": bool(SUBMISSIONS_ADMIN_PASSWORD),
             },
         }
 
@@ -731,5 +1023,7 @@ def api_quote(req: QuoteRequest, request: Request) -> Dict[str, Any]:
             "dailyLimit": AI_DAILY_TOKEN_LIMIT,
             "remainingTokens": max(0, AI_DAILY_TOKEN_LIMIT - updated_usage["totalTokens"]) if AI_DAILY_TOKEN_LIMIT else None,
             "logPath": str(AI_USAGE_LOG_PATH),
+            "adminOverrideUsed": is_admin_override,
+            "adminResetUsed": admin_reset_used,
         },
     }

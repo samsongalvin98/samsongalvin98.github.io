@@ -24,6 +24,7 @@
     row.appendChild(bubble);
     listEl.appendChild(row);
     listEl.scrollTop = listEl.scrollHeight;
+    return row;
   }
 
   function updateConversationField(fieldEl, history) {
@@ -45,6 +46,16 @@
     }
   }
 
+  function setPopupBusy(buttonEl, busy) {
+    if (!buttonEl) return;
+    if (!buttonEl.dataset.defaultLabel) {
+      buttonEl.dataset.defaultLabel = buttonEl.textContent;
+    }
+
+    buttonEl.disabled = !!busy;
+    buttonEl.textContent = busy ? "Resetting..." : buttonEl.dataset.defaultLabel;
+  }
+
   async function sendMessage(options) {
     const res = await fetch(options.endpoint, {
       method: "POST",
@@ -53,6 +64,7 @@
         message: options.userText,
         requestType: options.requestType,
         history: options.history.slice(-12),
+        adminPassword: options.adminPassword,
       }),
     });
 
@@ -68,6 +80,7 @@
     return {
       text: data.text,
       usage: data.usage || null,
+      adminResetCommandUsed: !!(data.usage && data.usage.adminResetCommandUsed),
     };
   }
 
@@ -96,26 +109,48 @@
       : null;
     const todayTotalTokens = typeof usage.todayTotalTokens === "number" ? usage.todayTotalTokens : null;
     const remainingTokens = typeof usage.remainingTokens === "number" ? usage.remainingTokens : null;
+    const adminOverrideUsed = !!usage.adminOverrideUsed;
+    const adminResetUsed = !!usage.adminResetUsed;
+    const limitReached = !!usage.limitReached;
+    const adminOverrideAvailable = !!usage.adminOverrideAvailable;
 
     const parts = [];
     if (typeof requestTokens === "number") parts.push("Request tokens: " + requestTokens);
     if (typeof todayTotalTokens === "number") parts.push("Today total: " + todayTotalTokens);
     if (typeof remainingTokens === "number") parts.push("Remaining: " + remainingTokens);
+    if (adminOverrideUsed) parts.push("Admin override used");
+    if (adminResetUsed) parts.push("Token count reset");
+    if (limitReached && adminOverrideAvailable) parts.push("Enter admin password to continue");
 
     return parts.length ? parts.join(" | ") : "Quote updated.";
   }
 
+  function isLimitReachedResponse(result) {
+    if (!result) return false;
+    if (result.usage && result.usage.limitReached) return true;
+
+    var text = String(result.text || "").toLowerCase();
+    return text.indexOf("daily ai limit reached") !== -1 || text.indexOf("try again later") !== -1;
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     const listEl = byId("aiChatMessages");
+    const chatInputEl = byId("aiChatInput");
     const sendButtonEl = byId("aiChatSend");
     const statusEl = byId("aiChatStatus");
+    const adminPopupEl = byId("aiAdminPopup");
+    const adminPasswordEl = byId("aiAdminPassword");
+    const adminResetButtonEl = byId("aiAdminResetButton");
+    const adminCancelButtonEl = byId("aiAdminCancelButton");
+    const adminPopupStatusEl = byId("aiAdminPopupStatus");
     const notesEl = byId("notes");
     const formEl = byId("devRequestForm");
     const conversationFieldEl = byId("aiConversation");
     const endpoint = getEndpoint();
     const history = [];
+    let pendingAdminRetry = null;
 
-    if (!listEl || !notesEl || !sendButtonEl) return;
+    if (!listEl || !notesEl || !chatInputEl || !sendButtonEl || !statusEl || !adminPopupEl || !adminPasswordEl || !adminResetButtonEl || !adminCancelButtonEl || !adminPopupStatusEl) return;
 
     clearEl(listEl);
     updateConversationField(conversationFieldEl, history);
@@ -132,17 +167,45 @@
 
     addIntroMessage(listEl);
 
-    async function runRequest() {
-      const userText = String(notesEl.value || "").trim();
+    function showAdminPopup(message) {
+      adminPopupEl.hidden = false;
+      adminPopupStatusEl.textContent = message || "";
+      adminPasswordEl.focus();
+    }
+
+    function hideAdminPopup() {
+      adminPopupEl.hidden = true;
+      adminPopupStatusEl.textContent = "";
+      adminPasswordEl.value = "";
+    }
+
+    function readUserText() {
+      var chatText = String(chatInputEl.value || "").trim();
+      if (chatText) return chatText;
+      return String(notesEl.value || "").trim();
+    }
+
+    function clearComposer() {
+      chatInputEl.value = "";
+    }
+
+    async function runRequest(options) {
+      const requestOptions = options || {};
+      const userText = requestOptions.userText || readUserText();
+      const isRetry = !!requestOptions.isRetry;
 
       if (!userText) {
         if (statusEl) statusEl.textContent = "Enter a project description or AI message first.";
         return;
       }
 
-      addMsg(listEl, { role: "user", text: userText });
-      history.push({ role: "user", text: userText });
-  updateConversationField(conversationFieldEl, history);
+      if (!isRetry) {
+        const userRowEl = addMsg(listEl, { role: "user", text: userText });
+        history.push({ role: "user", text: userText });
+        updateConversationField(conversationFieldEl, history);
+
+        requestOptions.userRowEl = userRowEl;
+      }
 
       setBusy(sendButtonEl, true);
       if (statusEl) statusEl.textContent = "Contacting AI quote service...";
@@ -153,11 +216,34 @@
           history,
           userText: buildAiMessage(userText, history.slice(0, -1)),
           requestType: getRequestType(),
+          adminPassword: String(adminPasswordEl.value || "").trim(),
         });
+
+        if (isLimitReachedResponse(result)) {
+          pendingAdminRetry = {
+            userText: userText,
+          };
+          if (statusEl) statusEl.textContent = formatUsageStatus(result.usage);
+          showAdminPopup("Token limit reached. Enter admin password to reset and continue.");
+          return;
+        }
+
+        if (result.adminResetCommandUsed) {
+          if (requestOptions.userRowEl && requestOptions.userRowEl.parentNode) {
+            requestOptions.userRowEl.parentNode.removeChild(requestOptions.userRowEl);
+          }
+          if (history.length && history[history.length - 1].role === "user") {
+            history.pop();
+            updateConversationField(conversationFieldEl, history);
+          }
+        }
 
         addMsg(listEl, { role: "ai", text: result.text });
         history.push({ role: "ai", text: result.text });
         updateConversationField(conversationFieldEl, history);
+        clearComposer();
+        pendingAdminRetry = null;
+        hideAdminPopup();
         if (statusEl) statusEl.textContent = formatUsageStatus(result.usage);
       } catch (err) {
         console.error("AI chat failed", err);
@@ -176,15 +262,65 @@
       }
     }
 
+    async function handleAdminReset() {
+      if (!pendingAdminRetry) {
+        hideAdminPopup();
+        return;
+      }
+
+      if (!String(adminPasswordEl.value || "").trim()) {
+        adminPopupStatusEl.textContent = "Enter the admin password.";
+        return;
+      }
+
+      setPopupBusy(adminResetButtonEl, true);
+      adminPopupStatusEl.textContent = "Resetting token count...";
+
+      try {
+        await runRequest({
+          userText: pendingAdminRetry.userText,
+          isRetry: true,
+        });
+      } finally {
+        setPopupBusy(adminResetButtonEl, false);
+      }
+    }
+
     sendButtonEl.addEventListener("click", function () {
       runRequest();
+    });
+
+    adminResetButtonEl.addEventListener("click", function () {
+      handleAdminReset();
+    });
+
+    adminCancelButtonEl.addEventListener("click", function () {
+      pendingAdminRetry = null;
+      hideAdminPopup();
+    });
+
+    adminPasswordEl.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        handleAdminReset();
+      }
+    });
+
+    chatInputEl.addEventListener("keydown", function (event) {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        runRequest();
+      }
     });
 
     if (formEl) {
       formEl.addEventListener("reset", function () {
         history.length = 0;
+        pendingAdminRetry = null;
         clearEl(listEl);
         addIntroMessage(listEl);
+        clearComposer();
+        hideAdminPopup();
         updateConversationField(conversationFieldEl, history);
         if (statusEl) statusEl.textContent = "";
       });
