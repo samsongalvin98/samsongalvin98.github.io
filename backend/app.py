@@ -487,15 +487,19 @@ def build_system_prompt(request_type: str = "") -> str:
     )
 
 
-        "- Do not include time estimates, schedules, or timelines.\n"
-        "- Never mention hours, days, weeks, or delivery timing.\n"
+def sanitize_quote_response(text: str) -> str:
+    raw_text = (text or "").strip()
     if not raw_text:
         return "I couldn’t generate a quote right now. Please try again."
-        "- If insufficient information, ask exactly one short question and stop.\n"
+
+    normalized = raw_text.replace(
+        "I cannot generate a quote for that request.",
+        "This request is outside the scope of this quote tool.",
+    )
     money_matches = re.findall(r"\$\s*(\d[\d,]*(?:\.\d+)?)\s*([kKmM]?)", normalized)
     if money_matches:
         max_amount = 0.0
-        "- Avoid definitive language.\n"
+        for amount_text, suffix in money_matches:
             amount = float(amount_text.replace(",", ""))
 
             if suffix.lower() == "k":
@@ -506,14 +510,12 @@ def build_system_prompt(request_type: str = "") -> str:
             max_amount = max(max_amount, amount)
 
         if max_amount > 500_000:
-        "- If royalties apply, use this structure:\n"
-        "  • No royalties (0%):\n"
-        "  • Low royalties (3-5%):\n"
-        "  • Mid royalties (5-10%):\n"
-        "  • High royalties (10-20%):\n"
-        "  • Partnership (>20%):\n"
+            return "This request is outside the scope of this quote tool."
+
+    lines = normalized.splitlines()
+    filtered_lines: List[str] = []
     current_section = ""
-        "- If royalties do NOT apply: 1-3 bullets total\n\n"
+    question_count = 0
     time_pattern = re.compile(
         r"\b(day|days|week|weeks|month|months|hour|hours|timeline|timelines|lead time|lead times|turnaround|schedule|eta|etas|business day|business days)\b",
         re.IGNORECASE,
