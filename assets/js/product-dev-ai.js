@@ -35,15 +35,18 @@
   function addIntroMessage(listEl) {
     addMsg(listEl, {
       role: "ai",
-      text: "Use the Project Description field above to send your product details or follow-up AI messages. Replies will appear here.",
+      text: "Send your project description from the form above, then use the reply box below for follow-up AI messages. Replies will appear here.",
     });
   }
 
-  function setBusy(sendButtonEl, busy) {
-    if (sendButtonEl) {
-      sendButtonEl.disabled = !!busy;
-      sendButtonEl.textContent = busy ? "AI Thinking..." : "AI Send Message";
+  function setBusy(buttonEl, busy, busyLabel) {
+    if (!buttonEl) return;
+    if (!buttonEl.dataset.defaultLabel) {
+      buttonEl.dataset.defaultLabel = buttonEl.textContent;
     }
+
+    buttonEl.disabled = !!busy;
+    buttonEl.textContent = busy ? (busyLabel || "AI Thinking...") : buttonEl.dataset.defaultLabel;
   }
 
   function setPopupBusy(buttonEl, busy) {
@@ -136,7 +139,8 @@
   document.addEventListener("DOMContentLoaded", function () {
     const listEl = byId("aiChatMessages");
     const chatInputEl = byId("aiChatInput");
-    const sendButtonEl = byId("aiChatSend");
+    const projectSendButtonEl = byId("aiProjectDescriptionSend");
+    const replySendButtonEl = byId("aiChatSend");
     const statusEl = byId("aiChatStatus");
     const adminPopupEl = byId("aiAdminPopup");
     const adminPasswordEl = byId("aiAdminPassword");
@@ -150,7 +154,7 @@
     const history = [];
     let pendingAdminRetry = null;
 
-    if (!listEl || !notesEl || !chatInputEl || !sendButtonEl || !statusEl || !adminPopupEl || !adminPasswordEl || !adminResetButtonEl || !adminCancelButtonEl || !adminPopupStatusEl) return;
+    if (!listEl || !notesEl || !chatInputEl || !projectSendButtonEl || !replySendButtonEl || !statusEl || !adminPopupEl || !adminPasswordEl || !adminResetButtonEl || !adminCancelButtonEl || !adminPopupStatusEl) return;
 
     clearEl(listEl);
     updateConversationField(conversationFieldEl, history);
@@ -160,7 +164,8 @@
         role: "ai",
         text: "AI quote chat is not configured yet. Set LAB_FORM_ENDPOINTS.productDevelopmentAi in assets/js/lab-form-endpoints.js to your backend URL.",
       });
-      sendButtonEl.disabled = true;
+      projectSendButtonEl.disabled = true;
+      replySendButtonEl.disabled = true;
       if (statusEl) statusEl.textContent = "AI chat disabled (no endpoint configured).";
       return;
     }
@@ -179,10 +184,12 @@
       adminPasswordEl.value = "";
     }
 
-    function readUserText() {
-      var chatText = String(chatInputEl.value || "").trim();
-      if (chatText) return chatText;
+    function readProjectDescriptionText() {
       return String(notesEl.value || "").trim();
+    }
+
+    function readReplyText() {
+      return String(chatInputEl.value || "").trim();
     }
 
     function clearComposer() {
@@ -191,11 +198,13 @@
 
     async function runRequest(options) {
       const requestOptions = options || {};
-      const userText = requestOptions.userText || readUserText();
+      const userText = String(requestOptions.userText || "").trim();
       const isRetry = !!requestOptions.isRetry;
+      const triggerButtonEl = requestOptions.triggerButtonEl || null;
+      const busyLabel = requestOptions.busyLabel || "AI Thinking...";
 
       if (!userText) {
-        if (statusEl) statusEl.textContent = "Enter a project description or AI message first.";
+        if (statusEl) statusEl.textContent = requestOptions.emptyMessage || "Enter a project description or AI message first.";
         return;
       }
 
@@ -207,7 +216,8 @@
         requestOptions.userRowEl = userRowEl;
       }
 
-      setBusy(sendButtonEl, true);
+      setBusy(projectSendButtonEl, true, busyLabel);
+      setBusy(replySendButtonEl, true, busyLabel);
       if (statusEl) statusEl.textContent = "Contacting AI quote service...";
 
       try {
@@ -258,8 +268,32 @@
           text: "Sorry, I could not reach the AI quote server. Please try again in a moment.",
         });
       } finally {
-        setBusy(sendButtonEl, false);
+        setBusy(projectSendButtonEl, false);
+        setBusy(replySendButtonEl, false);
       }
+    }
+
+    function handleProjectDescriptionSend() {
+      runRequest({
+        userText: readProjectDescriptionText(),
+        triggerButtonEl: projectSendButtonEl,
+        busyLabel: "Sending project description...",
+        emptyMessage: "Enter a project description first.",
+      });
+    }
+
+    function handleReplySend() {
+      if (!history.length) {
+        if (statusEl) statusEl.textContent = "Send the project description first, then use the reply message box.";
+        return;
+      }
+
+      runRequest({
+        userText: readReplyText(),
+        triggerButtonEl: replySendButtonEl,
+        busyLabel: "Sending reply...",
+        emptyMessage: "Enter a reply message first.",
+      });
     }
 
     async function handleAdminReset() {
@@ -286,8 +320,12 @@
       }
     }
 
-    sendButtonEl.addEventListener("click", function () {
-      runRequest();
+    projectSendButtonEl.addEventListener("click", function () {
+      handleProjectDescriptionSend();
+    });
+
+    replySendButtonEl.addEventListener("click", function () {
+      handleReplySend();
     });
 
     adminResetButtonEl.addEventListener("click", function () {
@@ -309,7 +347,7 @@
     chatInputEl.addEventListener("keydown", function (event) {
       if (event.key === "Enter" && !event.shiftKey) {
         event.preventDefault();
-        runRequest();
+        handleReplySend();
       }
     });
 

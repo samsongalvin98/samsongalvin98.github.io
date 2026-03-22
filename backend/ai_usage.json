@@ -7,16 +7,16 @@
     "2026-03-22": {
       "users": {
         "2601:18c:8203:4920:d911:22cf:a131:b94c": {
-          "promptTokens": 759,
-          "candidatesTokens": 105,
-          "totalTokens": 2178,
-          "requestCount": 1,
+          "promptTokens": 3457,
+          "candidatesTokens": 482,
+          "totalTokens": 8678,
+          "requestCount": 4,
           "lastRequestType": "General",
           "lastModel": "gemini-3-flash-preview",
-          "updatedAt": "2026-03-22T14:28:59+00:00"
+          "updatedAt": "2026-03-22T14:50:23+00:00"
         }
       },
-      "updatedAt": "2026-03-22T14:28:59+00:00"
+      "updatedAt": "2026-03-22T14:50:23+00:00"
     }
   }
 }
