@@ -11,63 +11,59 @@ const games = [
   { name: "Stack Cup", icon: "assets/images/bo6.jpg", desc: "Bounce a ball into a cup, then stack it. Last player with unstacked cup loses." }
 ];
 
+
 let players = loadScores();
 let teams = loadTeams();
 let currentGameIndex = 0;
 let playerName = loadPlayer();
 
-function renderSignIn() {
-  document.getElementById('beerMain').innerHTML = `
-    <section class="beer-section" style="margin: 0 auto; max-width: 400px;">
-      <h2>Sign In</h2>
-      <form class="beer-form" id="beerSignInForm">
-        <input type="text" id="beerPlayerName" placeholder="Enter your name" required value="">
-        <button type="submit">Join Beer Olympics</button>
-      </form>
-    </section>
-  `;
-  document.getElementById('beerSignInForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const name = document.getElementById('beerPlayerName').value.trim();
-    if (!name) return;
-    playerName = name;
-    savePlayer(name);
-    if (!players.some(p => p.name === name)) {
-      players.push({ name, scores: Array(games.length).fill(0) });
-      saveScores(players);
-    }
-    renderMain();
-  });
+function handleNameInput(e) {
+  e.preventDefault();
+  const name = document.getElementById('beerPlayerName').value.trim();
+  if (!name) return;
+  playerName = name;
+  savePlayer(name);
+  if (!players.some(p => p.name === name)) {
+    players.push({ name, scores: Array(games.length).fill(0) });
+    saveScores(players);
+  }
+  renderMain();
 }
 
 function renderMain() {
   document.getElementById('beerMain').innerHTML = `
-    <section class="beer-section" id="beer-current-game">
-      <h2>Current Game</h2>
-      <div style="margin-bottom:10px;">
-        <select id="currentGameSelect" style="font-size:1.1rem;padding:6px 12px;border-radius:8px;">
-          ${games.map((g,i)=>`<option value="${i}" ${i===currentGameIndex?'selected':''}>${g.name}</option>`).join('')}
-        </select>
-      </div>
-      <div class="beer-game" id="currentGameDisplay">
-        <img id="currentGameIcon" src="${games[currentGameIndex].icon}" alt="Game Icon">
-        <span class="beer-game-title" id="currentGameName">${games[currentGameIndex].name}</span>
-      </div>
-      <div style="color:#fbbf24;margin:10px 0 18px;">${games[currentGameIndex].desc}</div>
-      <div id="teamGenSection">
-        <input type="number" id="numTeams" min="2" max="10" placeholder="# of teams" style="width:90px;"> 
-        <button class="beer-next-btn" id="genTeamsBtn">Generate Teams</button>
-      </div>
-      <div id="teamsDisplay"></div>
-      <div style="margin-top:18px;">
-        <input type="text" id="winnersInput" placeholder="Winners (comma separated names or team #s)" style="width:220px;">
-        <button class="beer-next-btn" id="addPointsBtn">Add Points</button>
-      </div>
-    </section>
-    <section class="beer-section" id="beer-leaderboard">
-      <h2>Leaderboard</h2>
-      <div class="beer-leaderboard" id="leaderboardGraph"></div>
-    </section>
+    <div style="display:flex;gap:40px;justify-content:center;align-items:flex-start;">
+      <section class="beer-section" id="beer-current-game" style="flex:1 1 0;min-width:320px;">
+        <h2>Current Game</h2>
+        <div style="margin-bottom:10px;">
+          <select id="currentGameSelect" style="font-size:1.1rem;padding:6px 12px;border-radius:8px;">
+            ${games.map((g,i)=>`<option value="${i}" ${i===currentGameIndex?'selected':''}>${g.name}</option>`).join('')}
+          </select>
+        </div>
+        <div class="beer-game" id="currentGameDisplay">
+          <img id="currentGameIcon" src="${games[currentGameIndex].icon}" alt="Game Icon">
+          <span class="beer-game-title" id="currentGameName">${games[currentGameIndex].name}</span>
+        </div>
+        <div style="color:#fbbf24;margin:10px 0 18px;">${games[currentGameIndex].desc}</div>
+        <div id="teamGenSection">
+          <input type="number" id="numTeams" min="2" max="10" placeholder="# of teams" style="width:90px;"> 
+          <button class="beer-next-btn" id="genTeamsBtn">Generate Teams</button>
+        </div>
+        <div id="teamsDisplay"></div>
+        <div style="margin-top:18px;">
+          <input type="text" id="winnersInput" placeholder="Winners (comma separated names or team #s)" style="width:220px;">
+          <button class="beer-next-btn" id="addPointsBtn">Add Points</button>
+        </div>
+      </section>
+      <section class="beer-section" id="beer-leaderboard" style="flex:1 1 0;min-width:320px;position:relative;">
+        <form class="beer-form" id="beerSignInForm" style="position:absolute;top:18px;right:18px;max-width:220px;">
+          <input type="text" id="beerPlayerName" placeholder="Enter your name" required value="${playerName||''}">
+          <button type="submit">Sign In</button>
+        </form>
+        <h2 style="margin-top:48px;">Leaderboard</h2>
+        <div class="beer-leaderboard" id="leaderboardGraph"></div>
+      </section>
+    </div>
   `;
   document.getElementById('currentGameSelect').addEventListener('change', function(e) {
     currentGameIndex = Number(e.target.value);
@@ -99,6 +95,7 @@ function renderMain() {
     saveScores(players);
     renderMain();
   });
+  document.getElementById('beerSignInForm').addEventListener('submit', handleNameInput);
   renderLeaderboard();
 }
 
@@ -162,13 +159,6 @@ if (rulesBtn && rulesList) {
   });
 }
 
+
 // Initial render
-if (!playerName) {
-  renderSignIn();
-} else {
-  if (!players.some(p=>p.name===playerName)) {
-    players.push({ name: playerName, scores: Array(games.length).fill(0) });
-    saveScores(players);
-  }
-  renderMain();
-}
+renderMain();
