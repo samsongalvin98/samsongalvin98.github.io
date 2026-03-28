@@ -14,15 +14,28 @@ let players = loadScores();
 let teams = loadTeams();
 let currentGameIndex = 0;
 let playerName = loadPlayer();
+let chatMessages = loadChat();
+
+// migrate players to include optIn array if missing
+players = players.map(p => {
+  if (!Array.isArray(p.optIn) || p.optIn.length !== games.length) {
+    p.optIn = Array(games.length).fill(true);
+  }
+  if (!Array.isArray(p.scores) || p.scores.length !== games.length) {
+    p.scores = Array(games.length).fill(0);
+  }
+  return p;
+});
+saveScores(players);
 
 function handleNameInput(e) {
   e.preventDefault();
-  const name = document.getElementById('beerPlayerName').value.trim();
+  const name = (document.getElementById('beerPlayerNameFooter') && document.getElementById('beerPlayerNameFooter').value || '').trim();
   if (!name) return;
   playerName = name;
   savePlayer(name);
   if (!players.some(p => p.name === name)) {
-    players.push({ name, scores: Array(games.length).fill(0) });
+    players.push({ name, scores: Array(games.length).fill(0), optIn: Array(games.length).fill(true) });
     saveScores(players);
   }
   renderMain();
@@ -39,8 +52,10 @@ function renderMain() {
           </select>
         </div>
         <div class="beer-game" id="currentGameDisplay">
-          <img id="currentGameIcon" src="${games[currentGameIndex].icon}" alt="Game Icon">
-          <span class="beer-game-title" id="currentGameName">${games[currentGameIndex].name}</span>
+          <div style="text-align:center; width:100%">
+            <img id="currentGameIcon" src="${games[currentGameIndex].icon}" alt="Game Icon">
+            <div class="beer-game-title" id="currentGameName">${games[currentGameIndex].name}</div>
+          </div>
         </div>
         <div style="color:#fbbf24;margin:10px 0 18px;">${games[currentGameIndex].desc}</div>
         <div id="teamGenSection">
@@ -56,6 +71,14 @@ function renderMain() {
       <section class="beer-section" id="beer-leaderboard" style="flex:1 1 0;min-width:320px;position:relative;">
         <h2>Leaderboard</h2>
         <div class="beer-leaderboard" id="leaderboardGraph"></div>
+        <div id="chatSection" style="margin-top:18px;">
+          <h3 style="color:#fbbf24;margin-bottom:8px;">Chat</h3>
+          <div id="chatList" style="max-height:260px;overflow:auto;background:#17171a;padding:8px;border-radius:8px;margin-bottom:8px;"></div>
+          <form id="chatForm" style="display:flex;gap:8px;">
+            <input id="chatInput" placeholder="Say something..." style="flex:1;padding:8px;border-radius:8px;border:1px solid #fbbf24;background:#18181b;color:#fbbf24;">
+            <button class="beer-next-btn" id="chatSendBtn" type="submit">Send</button>
+          </form>
+        </div>
       </section>
     </div>
   `;
@@ -63,11 +86,20 @@ function renderMain() {
     currentGameIndex = Number(e.target.value);
     renderMain();
   });
+  // render opt-in list
+  const optEl = document.createElement('div');
+  optEl.id = 'optInList';
+  optEl.style.margin = '12px 0 6px';
+  const currentSection = document.getElementById('beer-current-game');
+  if (currentSection) currentSection.insertBefore(optEl, document.getElementById('teamGenSection'));
+  renderOptInList();
   document.getElementById('genTeamsBtn').addEventListener('click', function(e) {
     e.preventDefault();
     const n = Number(document.getElementById('numTeams').value);
     if (n < 2 || n > 10) return alert('Enter 2-10 teams.');
-    teams = randomTeams(players.map(p=>p.name), n);
+    const activeNames = players.filter(p => p.optIn[currentGameIndex]).map(p=>p.name);
+    if (activeNames.length < n) return alert('Not enough active players for that many teams.');
+    teams = randomTeams(activeNames, n);
     saveTeams(teams);
     renderTeams();
   });
@@ -89,24 +121,113 @@ function renderMain() {
     saveScores(players);
     renderMain();
   });
-  // Attach handler to header sign-in form (if present)
-  const headerForm = document.getElementById('beerSignInFormHeader');
-  const headerInput = document.getElementById('beerPlayerNameHeader');
-  if (headerInput && playerName) headerInput.value = playerName;
-  if (headerForm) headerForm.addEventListener('submit', function(e){
+  // Attach handler to footer sign-in form (optional)
+  const footerForm = document.getElementById('beerSignInFooter');
+  const footerInput = document.getElementById('beerPlayerNameFooter');
+  if (footerInput && playerName) footerInput.value = playerName;
+  if (footerForm) footerForm.addEventListener('submit', function(e){
     e.preventDefault();
-    const name = (headerInput && headerInput.value || '').trim();
+    const name = (footerInput && footerInput.value || '').trim();
     if (!name) return;
-    // reuse handleNameInput logic
     playerName = name;
     savePlayer(name);
     if (!players.some(p => p.name === name)) {
-      players.push({ name, scores: Array(games.length).fill(0) });
+      players.push({ name, scores: Array(games.length).fill(0), optIn: Array(games.length).fill(true) });
       saveScores(players);
     }
     renderMain();
   });
   renderLeaderboard();
+  // chat wiring
+  const chatForm = document.getElementById('chatForm');
+  const chatInput = document.getElementById('chatInput');
+  if (chatForm) {
+    chatForm.addEventListener('submit', function(e){
+      e.preventDefault();
+      const text = (chatInput && chatInput.value || '').trim();
+      if (!text) return;
+      if (!playerName) return alert('Please sign in to post messages.');
+      addChatMessage(playerName, text);
+      chatInput.value = '';
+      renderChat();
+    });
+  }
+  renderChat();
+}
+
+function formatTime(ts) {
+  const d = new Date(ts);
+  return d.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'});
+}
+
+function renderChat() {
+  const el = document.getElementById('chatList');
+  if (!el) return;
+  const messages = loadChat().slice(-200);
+  if (!messages.length) { el.innerHTML = '<div style="color:#fbbf24;">No messages yet.</div>'; return; }
+  let html = '';
+  messages.slice().reverse().forEach(m => {
+    const liked = playerName && (m.likedBy || []).includes(playerName);
+    html += `<div style="padding:8px;border-bottom:1px dashed #2b2b2f;margin-bottom:6px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <div style="color:#fbbf24;font-weight:bold;">${m.author}</div>
+        <div style="color:#9ca3af;font-size:0.85rem;">${formatTime(m.ts)}</div>
+      </div>
+      <div style="margin-top:6px;color:#e5e7eb;">${escapeHtml(m.text)}</div>
+      <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
+        <button data-like="${m.id}" class="chat-like-btn" style="background:${liked? '#f59e0b':'#32343a'};color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;">❤ ${m.likes||0}</button>
+      </div>
+    </div>`;
+  });
+  el.innerHTML = html;
+  Array.from(el.querySelectorAll('.chat-like-btn')).forEach(btn => {
+    btn.addEventListener('click', function(){
+      if (!playerName) return alert('Sign in to like messages.');
+      const id = this.getAttribute('data-like');
+      toggleLikeMessage(id, playerName);
+      renderChat();
+    });
+  });
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function renderOptInList() {
+  const el = document.getElementById('optInList');
+  if (!el) return;
+  if (!players.length) { el.innerHTML = '<div style="color:#fbbf24;">No players yet.</div>'; return; }
+  let html = '<div style="display:flex;flex-direction:column;gap:6px;">';
+  players.forEach(p => {
+    const checked = p.optIn && p.optIn[currentGameIndex] ? 'checked' : '';
+    const disabled = (playerName && (playerName === p.name || String(playerName).toLowerCase() === 'samson')) ? '' : 'disabled';
+    const note = (p.optIn && p.optIn[currentGameIndex]) ? '' : ' <span style="color:#f87171;">(sitting out)</span>';
+    html += `<label style="display:flex;align-items:center;gap:8px;">
+      <input type="checkbox" data-player="${p.name}" ${checked} ${disabled}>
+      <span style="color:#fbbf24;width:160px;">${p.name}</span>
+      <span style="color:#e5e7eb;">${note}</span>
+    </label>`;
+  });
+  html += '</div>';
+  el.innerHTML = html;
+  Array.from(el.querySelectorAll('input[type=checkbox]')).forEach(cb => {
+    cb.addEventListener('change', function(){
+      const name = this.getAttribute('data-player');
+      const p = players.find(x=>x.name===name);
+      if (!p) return;
+      p.optIn[currentGameIndex] = !!this.checked;
+      saveScores(players);
+      renderTeams();
+      renderLeaderboard();
+      renderOptInList();
+    });
+  });
 }
 
 function renderTeams() {
@@ -119,11 +240,19 @@ function renderTeams() {
   });
   html += '</div>';
   el.innerHTML = html;
+  // wire up remove buttons
+  Array.from(el.querySelectorAll('.remove-player-btn')).forEach(btn => {
+    btn.addEventListener('click', function() {
+      const name = this.getAttribute('data-remove');
+      removePlayer(name);
+    });
+  });
 }
 
 function addPoints(name, gameIdx, pts) {
   const p = players.find(p => p.name === name);
   if (p) {
+    if (Array.isArray(p.optIn) && p.optIn[gameIdx] === false) return; // skip if opted out
     p.scores[gameIdx] = (p.scores[gameIdx]||0) + pts;
   }
 }
@@ -141,10 +270,14 @@ function renderLeaderboard() {
   let html = '<div style="width:100%;max-width:420px;margin:0 auto;">';
   sorted.forEach((p,i) => {
     const total = p.scores.reduce((a,b)=>a+b,0);
-    html += `<div style="margin-bottom:10px;display:flex;align-items:center;">
-      <span style="width:90px;display:inline-block;">${p.name}</span>
-      <div style="background:#fbbf24;height:28px;border-radius:8px;width:${Math.round(260*total/max)}px;min-width:14px;display:inline-block;"></div>
-      <span style="margin-left:10px;">${total}</span>
+    const optedOut = Array.isArray(p.optIn) && p.optIn[currentGameIndex] === false;
+    html += `<div style="margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;opacity:${optedOut?0.45:1};">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="width:110px;display:inline-block;">${p.name}${optedOut? ' <span style=\"color:#f87171;\">(sitting out)</span>':''}</span>
+        <div style="background:#fbbf24;height:28px;border-radius:8px;width:${Math.round(220*total/max)}px;min-width:14px;display:inline-block;"></div>
+        <span style="margin-left:10px;">${total}</span>
+      </div>
+      ${ (playerName && String(playerName).toLowerCase() === 'samson') ? `<button data-remove="${p.name}" class="remove-player-btn" style="background:#ef4444;color:#fff;border:none;padding:6px 8px;border-radius:6px;">Remove</button>` : '' }
     </div>`;
   });
   html += '</div>';
@@ -158,6 +291,14 @@ function randomTeams(names, numTeams) {
     teams[i%numTeams].push(name);
   });
   return teams;
+}
+
+function removePlayer(name) {
+  if (!playerName || String(playerName).toLowerCase() !== 'samson') return;
+  if (!window.confirm('Remove player ' + name + ' from tournament?')) return;
+  players = players.filter(p => p.name !== name);
+  saveScores(players);
+  renderMain();
 }
 
 // Rules dropdown

@@ -17,7 +17,7 @@
                 position: relative;
         }
             .beer-header img {
-                width: 160px;
+                width: 220px;
                 height: auto;
                 margin-bottom: 12px;
             }
@@ -108,28 +108,17 @@
             margin-bottom: 18px;
         }
         .beer-game img {
-            width: 64px;
-            height: 64px;
-            border-radius: 8px;
+            width: 140px;
+            height: 140px;
+            border-radius: 12px;
             background: #fff;
+            display:block;
+            margin: 0 auto 10px;
         }
-        /* Sign-in in header top-right */
-        .beer-signin {
-            position: absolute;
-            right: 18px;
-            top: 12px;
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-        .beer-signin input {
-            padding: 8px 10px;
-            border-radius: 8px;
-            border: 1px solid #fbbf24;
-            background: #18181b;
-            color: #fbbf24;
-        }
-        .beer-signin button { padding: 8px 12px; }
+        /* Footer sign-in */
+        .beer-signin-footer { display:inline-flex; gap:8px; align-items:center; justify-content:center; }
+        .beer-signin-footer input { padding:8px 10px; border-radius:8px; border:1px solid #fbbf24; background:#18181b; color:#fbbf24; }
+        .beer-signin-footer button { padding:8px 10px; border-radius:8px; background:#fbbf24; color:#23272f; border:none; }
         .beer-game-title {
             font-size: 1.2rem;
             color: #fbbf24;
@@ -169,15 +158,22 @@
             color: #18181b;
         }
     </style>
+        <style>
+            @media (max-width: 760px) {
+                .beer-main { flex-direction: column; gap: 18px; padding: 0 12px; }
+                .beer-section { width: 100%; padding: 20px; }
+                .beer-header img { width: 180px; }
+                .beer-game img { width: 180px; height: 180px; }
+                .beer-title { font-size: 1.9rem; }
+                .beer-signin-footer input { width: 60%; }
+            }
+        </style>
 </head>
 <body>
     <div class="beer-header">
         <img src="assets/images/bo1.jpg" alt="Beer Olympics">
         <div class="beer-title">Beer Olympics</div>
-        <form id="beerSignInFormHeader" class="beer-signin" aria-label="Sign in">
-            <input id="beerPlayerNameHeader" type="text" placeholder="Your name">
-            <button id="beerSignInButton" type="submit">Join</button>
-        </form>
+        <!-- sign-in moved to page footer for less overlap on header -->
         <button class="beer-rules-btn" id="beerRulesBtn">Game Rules</button>
         <div class="beer-rules-list" id="beerRulesList">
             <h3>Game Rules</h3>
@@ -193,6 +189,15 @@
         <div class="beer-main" id="beerMain">
             <!-- Content will be rendered by JS -->
         </div>
+
+        <!-- Footer sign-in (optional) -->
+        <div style="text-align:center;padding:18px 0;">
+          <form id="beerSignInFooter" class="beer-signin-footer" aria-label="Sign in">
+            <input id="beerPlayerNameFooter" type="text" placeholder="Your name">
+            <button id="beerSignInButtonFooter" type="submit">Join</button>
+          </form>
+        </div>
+
         <script src="assets/js/beer-olympics-data.js" defer></script>
         <script src="assets/js/beer-olympics.js" defer></script>
 </body>

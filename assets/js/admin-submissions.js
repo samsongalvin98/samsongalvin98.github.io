@@ -695,18 +695,18 @@
     }
 
     async function loadCsv() {
-      if (!baseUrl || !currentPassword) return;
-
       setBusy(csvReloadButton, true, "Loading...");
-      setStatus(csvStatus, "Loading print color options CSV...");
+      setStatus(csvStatus, "Loading print color options CSV from assets...");
 
       try {
-        var payload = await fetchJson(baseUrl + "/api/admin/print-color-options", currentPassword);
-        csvEditor.value = typeof payload.content === "string" ? payload.content : "";
-        setStatus(csvStatus, "CSV loaded.");
+        const res = await fetch('assets/data/print-color-options.csv', { cache: 'no-cache' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const text = await res.text();
+        csvEditor.value = text || "";
+        setStatus(csvStatus, "CSV loaded from assets/data/print-color-options.csv.");
       } catch (error) {
-        console.error("Failed to load print color options CSV", error);
-        setStatus(csvStatus, "Could not load CSV. Check password and backend settings.");
+        console.error("Failed to load print color options CSV from assets", error);
+        setStatus(csvStatus, "Could not load CSV from assets. Check file path or hosting.");
       } finally {
         setBusy(csvReloadButton, false, "Loading...");
       }
@@ -876,19 +876,24 @@
     }
 
     async function handleSaveCsv() {
-      if (!baseUrl || !currentPassword) return;
-
-      setBusy(csvSaveButton, true, "Saving...");
-      setStatus(csvStatus, "Saving print color options CSV...");
+      setBusy(csvSaveButton, true, "Preparing download...");
+      setStatus(csvStatus, "Preparing CSV download...");
 
       try {
-        await putJson(baseUrl + "/api/admin/print-color-options", currentPassword, {
-          content: String(csvEditor.value || ""),
-        });
-        setStatus(csvStatus, "CSV saved.");
+        const content = String(csvEditor.value || "");
+        const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'print-color-options.csv';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        setStatus(csvStatus, "CSV prepared for download. Upload the file to your repo or hosting to apply changes.");
       } catch (error) {
-        console.error("Failed to save print color options CSV", error);
-        setStatus(csvStatus, getErrorMessage(error, "Save failed. Keep the header as Material,Common colors and check backend settings."));
+        console.error("Failed to prepare CSV download", error);
+        setStatus(csvStatus, getErrorMessage(error, "Could not prepare CSV download."));
       } finally {
         setBusy(csvSaveButton, false, "Saving...");
       }
