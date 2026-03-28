@@ -168,9 +168,16 @@
             </ul>
         </div>
     </div>
-    <div class="beer-main" id="beerMain">
-        <!-- Content will be rendered by JS -->
-    </div>
-    <script src="assets/js/beer-olympics.js"></script>
+        <div class="beer-main" id="beerMain">
+                <!-- Content will be rendered by JS -->
+        </div>
+        <script src="assets/js/beer-olympics-data.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var script = document.createElement('script');
+                script.src = 'assets/js/beer-olympics.js';
+                document.body.appendChild(script);
+            });
+        </script>
 </body>
 </html>
