@@ -949,25 +949,28 @@
           }
 
           setStatus(csvStatus, 'CSV updated on GitHub. Reloading editor...');
+          const putPayload = await putRes.json().catch(()=>null);
+          // update local override and notify other tabs
+          try {
+            localStorage.setItem('printColorOptionsCsv', content);
+            const bc = new BroadcastChannel('print-color-options');
+            bc.postMessage({ type: 'update', content });
+            bc.close();
+          } catch (err) {}
           await loadCsv();
         } catch (error) {
           console.error('Failed to save CSV to GitHub', error);
           setStatus(csvStatus, getErrorMessage(error, 'Could not save CSV to GitHub. Falling back to download.'));
-          // fallback to download
+          // fallback: update local override and notify other tabs (no automatic download)
           try {
-            const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = 'print-color-options.csv';
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            URL.revokeObjectURL(url);
-            setStatus(csvStatus, 'CSV prepared for download. Upload the file to your repo or hosting to apply changes.');
+            localStorage.setItem('printColorOptionsCsv', content);
+            const bc = new BroadcastChannel('print-color-options');
+            bc.postMessage({ type: 'update', content });
+            bc.close();
+            setStatus(csvStatus, 'Local preview updated. Commit the file to your repo to persist changes.');
           } catch (err2) {
-            console.error('Failed to prepare CSV download', err2);
-            setStatus(csvStatus, getErrorMessage(err2, 'Could not prepare CSV download.'));
+            console.error('Failed to set local CSV override', err2);
+            setStatus(csvStatus, getErrorMessage(err2, 'Could not update local preview or prepare download.'));
           }
         } finally {
           setBusy(csvSaveButton, false, 'Saving...');
@@ -975,21 +978,16 @@
         return;
       }
 
-      // default behavior: download CSV for manual upload
+      // default behavior: update local override and notify other tabs (no download)
       try {
-        const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'print-color-options.csv';
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        URL.revokeObjectURL(url);
-        setStatus(csvStatus, 'CSV prepared for download. Upload the file to your repo or hosting to apply changes.');
+        localStorage.setItem('printColorOptionsCsv', content);
+        const bc = new BroadcastChannel('print-color-options');
+        bc.postMessage({ type: 'update', content });
+        bc.close();
+        setStatus(csvStatus, 'Local preview updated. Upload the file to your repo to persist changes.');
       } catch (error) {
-        console.error('Failed to prepare CSV download', error);
-        setStatus(csvStatus, getErrorMessage(error, 'Could not prepare CSV download.'));
+        console.error('Failed to set local CSV override', error);
+        setStatus(csvStatus, getErrorMessage(error, 'Could not update local preview.'));
       } finally {
         setBusy(csvSaveButton, false, 'Saving...');
       }

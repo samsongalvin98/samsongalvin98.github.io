@@ -177,19 +177,27 @@
     const { path, materialSelect, colorSelect } = config;
 
     try {
-      if (window.location && window.location.protocol === "file:") {
-        setFallbackOnError(
-          materialSelect,
-          colorSelect,
-          "Materials/colors can’t load from CSV when opened as a file."
-        );
-        return;
-      }
+      // If an admin recently updated the CSV, support a local override stored in localStorage
+      const localOverride = (function(){ try { return localStorage.getItem('printColorOptionsCsv'); } catch(e){ return null; } })();
+      let csvText = null;
 
-      // Always fetch as plain text from assets/data
-      const res = await fetch(path, { cache: "no-cache" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const csvText = await res.text();
+      if (localOverride) {
+        csvText = localOverride;
+      } else {
+        if (window.location && window.location.protocol === "file:") {
+          setFallbackOnError(
+            materialSelect,
+            colorSelect,
+            "Materials/colors can’t load from CSV when opened as a file."
+          );
+          return;
+        }
+
+        // Always fetch as plain text from assets/data
+        const res = await fetch(path, { cache: "no-cache" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        csvText = await res.text();
+      }
 
       const rows = csvParse(csvText);
       if (rows.length < 2) return;
@@ -231,6 +239,23 @@
 
       // Initial state
       updateColors();
+
+      // Listen for admin updates via BroadcastChannel and re-apply CSV
+      try {
+        const bc = new BroadcastChannel('print-color-options');
+        bc.addEventListener('message', (ev) => {
+          try {
+            const data = ev && ev.data;
+            if (data && data.type === 'update' && data.content) {
+              try {
+                localStorage.setItem('printColorOptionsCsv', data.content);
+              } catch (e) {}
+              // re-run init to apply new CSV
+              setTimeout(initMaterialColorDropdowns, 50);
+            }
+          } catch (e) {}
+        });
+      } catch (e) {}
     } catch (err) {
       console.error("Failed to init material/color dropdowns", err);
       setFallbackOnError(
