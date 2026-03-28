@@ -642,11 +642,6 @@
     var csvStatus = byId("adminCsvStatus");
     var csvReloadButton = byId("adminCsvReloadButton");
     var csvSaveButton = byId("adminCsvSaveButton");
-    var githubOwnerInput = byId("githubOwner");
-    var githubRepoInput = byId("githubRepo");
-    var githubBranchInput = byId("githubBranch");
-    var githubTokenInput = byId("githubToken");
-    var saveTokenSessionCheckbox = byId("saveTokenSession");
     var aiUsageCard = byId("adminAiUsageCard");
     var aiUsageList = byId("adminAiUsageList");
     var aiUsageStatus = byId("adminAiUsageStatus");
@@ -704,25 +699,22 @@
       setStatus(csvStatus, "Loading print color options CSV from assets...");
 
       try {
-        const res = await fetch('assets/data/print-color-options.csv', { cache: 'no-cache' });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const text = await res.text();
-        csvEditor.value = text || "";
-        setStatus(csvStatus, "CSV loaded from assets/data/print-color-options.csv.");
-        // prefill last-used github fields from session storage if present
-        try {
-          const owner = sessionStorage.getItem('admin.github.owner') || '';
-          const repo = sessionStorage.getItem('admin.github.repo') || '';
-          const branch = sessionStorage.getItem('admin.github.branch') || '';
-          const token = sessionStorage.getItem('admin.github.token') || '';
-          if (githubOwnerInput) githubOwnerInput.value = owner;
-          if (githubRepoInput) githubRepoInput.value = repo;
-          if (githubBranchInput) githubBranchInput.value = branch;
-          if (githubTokenInput && token) githubTokenInput.value = token;
-        } catch (err) {}
+        // If admin previously saved a local override, prefer that so admin sees what's currently in use
+        let text = null;
+        try { text = localStorage.getItem('printColorOptionsCsv'); } catch (e) { text = null; }
+        if (text) {
+          csvEditor.value = text;
+          setStatus(csvStatus, 'CSV loaded from local admin preview.');
+        } else {
+          const res = await fetch('assets/data/print-color-options.csv', { cache: 'no-cache' });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const fetched = await res.text();
+          csvEditor.value = fetched || "";
+          setStatus(csvStatus, "CSV loaded from assets/data/print-color-options.csv.");
+        }
       } catch (error) {
         console.error("Failed to load print color options CSV from assets", error);
-        setStatus(csvStatus, "Could not load CSV from assets. Check file path or hosting.");
+        setStatus(csvStatus, "Could not load CSV. Check file path or hosting.");
       } finally {
         setBusy(csvReloadButton, false, "Loading...");
       }
@@ -896,95 +888,13 @@
       setStatus(csvStatus, "Saving CSV...");
 
       const content = String(csvEditor.value || "");
-      const owner = githubOwnerInput && githubOwnerInput.value.trim();
-      const repo = githubRepoInput && githubRepoInput.value.trim();
-      const branch = (githubBranchInput && githubBranchInput.value.trim()) || 'main';
-      const token = githubTokenInput && githubTokenInput.value.trim();
-
-      // remember session if requested
-      try {
-        if (saveTokenSessionCheckbox && saveTokenSessionCheckbox.checked) {
-          sessionStorage.setItem('admin.github.token', token || '');
-        } else {
-          sessionStorage.removeItem('admin.github.token');
-        }
-        sessionStorage.setItem('admin.github.owner', owner || '');
-        sessionStorage.setItem('admin.github.repo', repo || '');
-        sessionStorage.setItem('admin.github.branch', branch || '');
-      } catch (err) {}
-
-      // if token + repo info provided, try GitHub API update
-      if (token && owner && repo) {
-        try {
-          setStatus(csvStatus, 'Checking existing file on GitHub...');
-          const path = 'assets/data/print-color-options.csv';
-          const headers = { Authorization: 'token ' + token, Accept: 'application/vnd.github.v3+json' };
-          // fetch existing file to get sha
-          const getUrl = 'https://api.github.com/repos/' + encodeURIComponent(owner) + '/' + encodeURIComponent(repo) + '/contents/' + encodeURIComponent(path) + '?ref=' + encodeURIComponent(branch);
-          const getRes = await fetch(getUrl, { headers });
-          let sha = null;
-          if (getRes.ok) {
-            const payload = await getRes.json();
-            sha = payload && payload.sha ? payload.sha : null;
-          }
-
-          setStatus(csvStatus, 'Uploading CSV to GitHub...');
-          const putUrl = 'https://api.github.com/repos/' + encodeURIComponent(owner) + '/' + encodeURIComponent(repo) + '/contents/' + encodeURIComponent(path);
-          const body = {
-            message: 'Update print-color-options.csv via admin UI',
-            content: btoa(unescape(encodeURIComponent(content))),
-            branch: branch,
-          };
-          if (sha) body.sha = sha;
-
-          const putRes = await fetch(putUrl, {
-            method: 'PUT',
-            headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
-            body: JSON.stringify(body),
-          });
-
-          if (!putRes.ok) {
-            const errText = await putRes.text();
-            throw new Error('GitHub API error: ' + putRes.status + ' ' + errText);
-          }
-
-          setStatus(csvStatus, 'CSV updated on GitHub. Reloading editor...');
-          const putPayload = await putRes.json().catch(()=>null);
-          // update local override and notify other tabs
-          try {
-            localStorage.setItem('printColorOptionsCsv', content);
-            const bc = new BroadcastChannel('print-color-options');
-            bc.postMessage({ type: 'update', content });
-            bc.close();
-          } catch (err) {}
-          await loadCsv();
-        } catch (error) {
-          console.error('Failed to save CSV to GitHub', error);
-          setStatus(csvStatus, getErrorMessage(error, 'Could not save CSV to GitHub. Falling back to download.'));
-          // fallback: update local override and notify other tabs (no automatic download)
-          try {
-            localStorage.setItem('printColorOptionsCsv', content);
-            const bc = new BroadcastChannel('print-color-options');
-            bc.postMessage({ type: 'update', content });
-            bc.close();
-            setStatus(csvStatus, 'Local preview updated. Commit the file to your repo to persist changes.');
-          } catch (err2) {
-            console.error('Failed to set local CSV override', err2);
-            setStatus(csvStatus, getErrorMessage(err2, 'Could not update local preview or prepare download.'));
-          }
-        } finally {
-          setBusy(csvSaveButton, false, 'Saving...');
-        }
-        return;
-      }
-
-      // default behavior: update local override and notify other tabs (no download)
       try {
         localStorage.setItem('printColorOptionsCsv', content);
         const bc = new BroadcastChannel('print-color-options');
         bc.postMessage({ type: 'update', content });
         bc.close();
-        setStatus(csvStatus, 'Local preview updated. Upload the file to your repo to persist changes.');
+        setStatus(csvStatus, 'Local preview updated. The 3D printing page will reflect this immediately in open tabs.');
+        await loadCsv();
       } catch (error) {
         console.error('Failed to set local CSV override', error);
         setStatus(csvStatus, getErrorMessage(error, 'Could not update local preview.'));
