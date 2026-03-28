@@ -57,7 +57,7 @@ function renderMain() {
       </section>
       <section class="beer-section" id="beer-leaderboard" style="flex:1 1 0;min-width:320px;position:relative;">
         <form class="beer-form" id="beerSignInForm" style="position:absolute;top:18px;right:18px;max-width:220px;">
-          <input type="text" id="beerPlayerName" placeholder="Enter your name" required value="${playerName||''}">
+          <input type="text" id="beerPlayerName" placeholder="Enter your name" value="${playerName||''}">
           <button type="submit">Sign In</button>
         </form>
         <h2 style="margin-top:48px;">Leaderboard</h2>
