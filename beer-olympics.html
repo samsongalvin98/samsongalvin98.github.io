@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Beer Olympics</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="assets/js/beer-olympics-data.js"></script>
+    <style>
+        body {
+            background: #18181b;
+            color: #f1f5f9;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        .beer-header {
+            text-align: center;
+            margin-top: 32px;
+        }
+        .beer-header img {
+            width: 120px;
+            height: auto;
+            margin-bottom: 12px;
+        }
+        .beer-title {
+            font-size: 2.5rem;
+            color: #fbbf24;
+            letter-spacing: 0.08em;
+            margin-bottom: 8px;
+        }
+        .beer-rules-btn {
+            background: #23272f;
+            color: #fbbf24;
+            border: 1px solid #fbbf24;
+            border-radius: 8px;
+            padding: 8px 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        .beer-rules-btn:hover {
+            background: #fbbf24;
+            color: #23272f;
+        }
+        .beer-rules-list {
+            display: none;
+            background: #23272f;
+            color: #fbbf24;
+            border-radius: 10px;
+            margin: 0 auto 18px;
+            max-width: 600px;
+            padding: 18px 24px;
+            text-align: left;
+        }
+        .beer-rules-list.active {
+            display: block;
+        }
+        .beer-main {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin: 40px auto;
+            max-width: 900px;
+        }
+        .beer-section {
+            background: #23272f;
+            border-radius: 18px;
+            padding: 32px 28px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+            min-width: 320px;
+            flex: 1 1 0;
+        }
+        .beer-section h2 {
+            color: #fbbf24;
+            margin-bottom: 18px;
+            font-size: 1.5rem;
+        }
+        .beer-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+        .beer-form input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #fbbf24;
+            background: #18181b;
+            color: #fbbf24;
+        }
+        .beer-form button {
+            background: #fbbf24;
+            color: #23272f;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .beer-form button:hover {
+            background: #fde68a;
+            color: #18181b;
+        }
+        .beer-game {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+        .beer-game img {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: #fff;
+        }
+        .beer-game-title {
+            font-size: 1.2rem;
+            color: #fbbf24;
+            font-weight: bold;
+        }
+        .beer-leaderboard {
+            margin-top: 12px;
+        }
+        .beer-leaderboard table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #23272f;
+        }
+        .beer-leaderboard th, .beer-leaderboard td {
+            padding: 10px 8px;
+            text-align: left;
+        }
+        .beer-leaderboard th {
+            color: #fbbf24;
+            border-bottom: 2px solid #fbbf24;
+        }
+        .beer-leaderboard tr:nth-child(even) {
+            background: #18181b;
+        }
+        .beer-next-btn {
+            margin-top: 18px;
+            background: #fbbf24;
+            color: #23272f;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .beer-next-btn:hover {
+            background: #fde68a;
+            color: #18181b;
+        }
+    </style>
+</head>
+<body>
+    <div class="beer-header">
+        <img src="assets/images/bo1.jpg" alt="Beer Olympics">
+        <div class="beer-title">Beer Olympics</div>
+        <button class="beer-rules-btn" id="beerRulesBtn">Game Rules</button>
+        <div class="beer-rules-list" id="beerRulesList">
+            <h3>Game Rules</h3>
+            <ul>
+                <li><b>Beer Ball:</b> Teams throw ping pong balls at beer cans. If you hit, drink until the ball is returned. First team to finish wins.</li>
+                <li><b>Musical Flip Cup:</b> Like musical chairs, but with flip cup. When music stops, last to flip is out.</li>
+                <li><b>Fuck Yeah:</b> Players take turns saying "fuck yeah" in a circle. If you mess up, drink. Last standing wins.</li>
+                <li><b>Beer Darts:</b> Throw darts at beer cans. If you puncture a can, the owner drinks. Points for accuracy.</li>
+                <li><b>Stack Cup:</b> Bounce a ball into a cup, then stack it. Last player with unstacked cup loses.</li>
+            </ul>
+        </div>
+    </div>
+    <div class="beer-main" id="beerMain">
+        <!-- Content will be rendered by JS -->
+    </div>
+    <script src="assets/js/beer-olympics.js"></script>
+</body>
+</html>

@@ -186,9 +186,18 @@
         return;
       }
 
-      const res = await fetch(path, { cache: "no-cache" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const csvText = await res.text();
+      // If the path looks like an API endpoint, fetch and extract CSV from JSON
+      let csvText = "";
+      if (path.includes("/api/admin/print-color-options")) {
+        const res = await fetch(path, { cache: "no-cache" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        csvText = data && typeof data.content === "string" ? data.content : "";
+      } else {
+        const res = await fetch(path, { cache: "no-cache" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        csvText = await res.text();
+      }
 
       const rows = csvParse(csvText);
       if (rows.length < 2) return;
