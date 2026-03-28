@@ -1,5 +1,3 @@
-document.getElementById("beerSignInForm").addEventListener("submit", function(e) {
-document.getElementById("nextGameBtn").addEventListener("click", function() {
 // Beer Olympics Enhanced
 // Requires beer-olympics-data.js
 
