@@ -54,11 +54,7 @@ function renderMain() {
         </div>
       </section>
       <section class="beer-section" id="beer-leaderboard" style="flex:1 1 0;min-width:320px;position:relative;">
-        <form class="beer-form" id="beerSignInForm" style="position:absolute;top:18px;right:18px;max-width:220px;">
-          <input type="text" id="beerPlayerName" placeholder="Enter your name" value="${playerName||''}">
-          <button type="submit">Sign In</button>
-        </form>
-        <h2 style="margin-top:48px;">Leaderboard</h2>
+        <h2>Leaderboard</h2>
         <div class="beer-leaderboard" id="leaderboardGraph"></div>
       </section>
     </div>
@@ -93,7 +89,23 @@ function renderMain() {
     saveScores(players);
     renderMain();
   });
-  document.getElementById('beerSignInForm').addEventListener('submit', handleNameInput);
+  // Attach handler to header sign-in form (if present)
+  const headerForm = document.getElementById('beerSignInFormHeader');
+  const headerInput = document.getElementById('beerPlayerNameHeader');
+  if (headerInput && playerName) headerInput.value = playerName;
+  if (headerForm) headerForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    const name = (headerInput && headerInput.value || '').trim();
+    if (!name) return;
+    // reuse handleNameInput logic
+    playerName = name;
+    savePlayer(name);
+    if (!players.some(p => p.name === name)) {
+      players.push({ name, scores: Array(games.length).fill(0) });
+      saveScores(players);
+    }
+    renderMain();
+  });
   renderLeaderboard();
 }
 
@@ -126,12 +138,12 @@ function renderLeaderboard() {
   // Sort by total points
   const sorted = [...players].sort((a,b)=>b.scores.reduce((x,y)=>x+y,0)-a.scores.reduce((x,y)=>x+y,0));
   const max = Math.max(...sorted.map(p=>p.scores.reduce((a,b)=>a+b,0)), 1);
-  let html = '<div style="width:100%;max-width:400px;margin:0 auto;">';
+  let html = '<div style="width:100%;max-width:420px;margin:0 auto;">';
   sorted.forEach((p,i) => {
     const total = p.scores.reduce((a,b)=>a+b,0);
     html += `<div style="margin-bottom:10px;display:flex;align-items:center;">
       <span style="width:90px;display:inline-block;">${p.name}</span>
-      <div style="background:#fbbf24;height:24px;border-radius:8px;width:${Math.round(220*total/max)}px;min-width:10px;display:inline-block;"></div>
+      <div style="background:#fbbf24;height:28px;border-radius:8px;width:${Math.round(260*total/max)}px;min-width:14px;display:inline-block;"></div>
       <span style="margin-left:10px;">${total}</span>
     </div>`;
   });

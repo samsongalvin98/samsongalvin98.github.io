@@ -5,7 +5,6 @@
     <title>Beer Olympics</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="assets/css/style.css">
-    <script src="assets/js/beer-olympics-data.js"></script>
     <style>
         body {
             background: #18181b;
@@ -13,14 +12,15 @@
             font-family: 'Segoe UI', Arial, sans-serif;
         }
         .beer-header {
-            text-align: center;
-            margin-top: 32px;
+                text-align: center;
+                margin-top: 24px;
+                position: relative;
         }
-        .beer-header img {
-            width: 120px;
-            height: auto;
-            margin-bottom: 12px;
-        }
+            .beer-header img {
+                width: 160px;
+                height: auto;
+                margin-bottom: 12px;
+            }
         .beer-title {
             font-size: 2.5rem;
             color: #fbbf24;
@@ -57,9 +57,10 @@
         .beer-main {
             display: flex;
             justify-content: center;
-            gap: 40px;
-            margin: 40px auto;
-            max-width: 900px;
+            gap: 24px;
+            margin: 28px auto;
+            max-width: 1100px;
+            padding: 0 16px;
         }
         .beer-section {
             background: #23272f;
@@ -107,11 +108,28 @@
             margin-bottom: 18px;
         }
         .beer-game img {
-            width: 40px;
-            height: 40px;
+            width: 64px;
+            height: 64px;
             border-radius: 8px;
             background: #fff;
         }
+        /* Sign-in in header top-right */
+        .beer-signin {
+            position: absolute;
+            right: 18px;
+            top: 12px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .beer-signin input {
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid #fbbf24;
+            background: #18181b;
+            color: #fbbf24;
+        }
+        .beer-signin button { padding: 8px 12px; }
         .beer-game-title {
             font-size: 1.2rem;
             color: #fbbf24;
@@ -156,6 +174,10 @@
     <div class="beer-header">
         <img src="assets/images/bo1.jpg" alt="Beer Olympics">
         <div class="beer-title">Beer Olympics</div>
+        <form id="beerSignInFormHeader" class="beer-signin" aria-label="Sign in">
+            <input id="beerPlayerNameHeader" type="text" placeholder="Your name">
+            <button id="beerSignInButton" type="submit">Join</button>
+        </form>
         <button class="beer-rules-btn" id="beerRulesBtn">Game Rules</button>
         <div class="beer-rules-list" id="beerRulesList">
             <h3>Game Rules</h3>
@@ -169,15 +191,9 @@
         </div>
     </div>
         <div class="beer-main" id="beerMain">
-                <!-- Content will be rendered by JS -->
+            <!-- Content will be rendered by JS -->
         </div>
-        <script src="assets/js/beer-olympics-data.js"></script>
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                var script = document.createElement('script');
-                script.src = 'assets/js/beer-olympics.js';
-                document.body.appendChild(script);
-            });
-        </script>
+        <script src="assets/js/beer-olympics-data.js" defer></script>
+        <script src="assets/js/beer-olympics.js" defer></script>
 </body>
 </html>
