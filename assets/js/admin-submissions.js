@@ -642,6 +642,11 @@
     var csvStatus = byId("adminCsvStatus");
     var csvReloadButton = byId("adminCsvReloadButton");
     var csvSaveButton = byId("adminCsvSaveButton");
+    var githubOwnerInput = byId("githubOwner");
+    var githubRepoInput = byId("githubRepo");
+    var githubBranchInput = byId("githubBranch");
+    var githubTokenInput = byId("githubToken");
+    var saveTokenSessionCheckbox = byId("saveTokenSession");
     var aiUsageCard = byId("adminAiUsageCard");
     var aiUsageList = byId("adminAiUsageList");
     var aiUsageStatus = byId("adminAiUsageStatus");
@@ -704,6 +709,17 @@
         const text = await res.text();
         csvEditor.value = text || "";
         setStatus(csvStatus, "CSV loaded from assets/data/print-color-options.csv.");
+        // prefill last-used github fields from session storage if present
+        try {
+          const owner = sessionStorage.getItem('admin.github.owner') || '';
+          const repo = sessionStorage.getItem('admin.github.repo') || '';
+          const branch = sessionStorage.getItem('admin.github.branch') || '';
+          const token = sessionStorage.getItem('admin.github.token') || '';
+          if (githubOwnerInput) githubOwnerInput.value = owner;
+          if (githubRepoInput) githubRepoInput.value = repo;
+          if (githubBranchInput) githubBranchInput.value = branch;
+          if (githubTokenInput && token) githubTokenInput.value = token;
+        } catch (err) {}
       } catch (error) {
         console.error("Failed to load print color options CSV from assets", error);
         setStatus(csvStatus, "Could not load CSV from assets. Check file path or hosting.");
@@ -876,11 +892,91 @@
     }
 
     async function handleSaveCsv() {
-      setBusy(csvSaveButton, true, "Preparing download...");
-      setStatus(csvStatus, "Preparing CSV download...");
+      setBusy(csvSaveButton, true, "Saving...");
+      setStatus(csvStatus, "Saving CSV...");
 
+      const content = String(csvEditor.value || "");
+      const owner = githubOwnerInput && githubOwnerInput.value.trim();
+      const repo = githubRepoInput && githubRepoInput.value.trim();
+      const branch = (githubBranchInput && githubBranchInput.value.trim()) || 'main';
+      const token = githubTokenInput && githubTokenInput.value.trim();
+
+      // remember session if requested
       try {
-        const content = String(csvEditor.value || "");
+        if (saveTokenSessionCheckbox && saveTokenSessionCheckbox.checked) {
+          sessionStorage.setItem('admin.github.token', token || '');
+        } else {
+          sessionStorage.removeItem('admin.github.token');
+        }
+        sessionStorage.setItem('admin.github.owner', owner || '');
+        sessionStorage.setItem('admin.github.repo', repo || '');
+        sessionStorage.setItem('admin.github.branch', branch || '');
+      } catch (err) {}
+
+      // if token + repo info provided, try GitHub API update
+      if (token && owner && repo) {
+        try {
+          setStatus(csvStatus, 'Checking existing file on GitHub...');
+          const path = 'assets/data/print-color-options.csv';
+          const headers = { Authorization: 'token ' + token, Accept: 'application/vnd.github.v3+json' };
+          // fetch existing file to get sha
+          const getUrl = 'https://api.github.com/repos/' + encodeURIComponent(owner) + '/' + encodeURIComponent(repo) + '/contents/' + encodeURIComponent(path) + '?ref=' + encodeURIComponent(branch);
+          const getRes = await fetch(getUrl, { headers });
+          let sha = null;
+          if (getRes.ok) {
+            const payload = await getRes.json();
+            sha = payload && payload.sha ? payload.sha : null;
+          }
+
+          setStatus(csvStatus, 'Uploading CSV to GitHub...');
+          const putUrl = 'https://api.github.com/repos/' + encodeURIComponent(owner) + '/' + encodeURIComponent(repo) + '/contents/' + encodeURIComponent(path);
+          const body = {
+            message: 'Update print-color-options.csv via admin UI',
+            content: btoa(unescape(encodeURIComponent(content))),
+            branch: branch,
+          };
+          if (sha) body.sha = sha;
+
+          const putRes = await fetch(putUrl, {
+            method: 'PUT',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
+            body: JSON.stringify(body),
+          });
+
+          if (!putRes.ok) {
+            const errText = await putRes.text();
+            throw new Error('GitHub API error: ' + putRes.status + ' ' + errText);
+          }
+
+          setStatus(csvStatus, 'CSV updated on GitHub. Reloading editor...');
+          await loadCsv();
+        } catch (error) {
+          console.error('Failed to save CSV to GitHub', error);
+          setStatus(csvStatus, getErrorMessage(error, 'Could not save CSV to GitHub. Falling back to download.'));
+          // fallback to download
+          try {
+            const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'print-color-options.csv';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+            setStatus(csvStatus, 'CSV prepared for download. Upload the file to your repo or hosting to apply changes.');
+          } catch (err2) {
+            console.error('Failed to prepare CSV download', err2);
+            setStatus(csvStatus, getErrorMessage(err2, 'Could not prepare CSV download.'));
+          }
+        } finally {
+          setBusy(csvSaveButton, false, 'Saving...');
+        }
+        return;
+      }
+
+      // default behavior: download CSV for manual upload
+      try {
         const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -890,12 +986,12 @@
         link.click();
         link.remove();
         URL.revokeObjectURL(url);
-        setStatus(csvStatus, "CSV prepared for download. Upload the file to your repo or hosting to apply changes.");
+        setStatus(csvStatus, 'CSV prepared for download. Upload the file to your repo or hosting to apply changes.');
       } catch (error) {
-        console.error("Failed to prepare CSV download", error);
-        setStatus(csvStatus, getErrorMessage(error, "Could not prepare CSV download."));
+        console.error('Failed to prepare CSV download', error);
+        setStatus(csvStatus, getErrorMessage(error, 'Could not prepare CSV download.'));
       } finally {
-        setBusy(csvSaveButton, false, "Saving...");
+        setBusy(csvSaveButton, false, 'Saving...');
       }
     }
 
