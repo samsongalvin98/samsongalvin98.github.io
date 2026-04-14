@@ -1,5 +1,12 @@
 (function () {
   var PASSWORD_STORAGE_KEY = "submissionControlPassword";
+  var GITHUB_TOKEN_STORAGE_KEY = "printColorOptionsGithubToken";
+  var DEFAULT_GITHUB_CSV_CONFIG = {
+    owner: "samsongalvin98",
+    repo: "samsongalvin98.github.io",
+    branch: "main",
+    path: "assets/data/print-color-options.csv",
+  };
 
   function byId(id) {
     return document.getElementById(id);
@@ -49,6 +56,94 @@
     } catch (error) {
       console.warn("Could not clear admin password from session storage.", error);
     }
+  }
+
+  function getGithubCsvConfig() {
+    var custom = window.ADMIN_GITHUB_CSV_CONFIG;
+    if (!custom || typeof custom !== "object") return DEFAULT_GITHUB_CSV_CONFIG;
+
+    return {
+      owner: String(custom.owner || DEFAULT_GITHUB_CSV_CONFIG.owner).trim(),
+      repo: String(custom.repo || DEFAULT_GITHUB_CSV_CONFIG.repo).trim(),
+      branch: String(custom.branch || DEFAULT_GITHUB_CSV_CONFIG.branch).trim(),
+      path: String(custom.path || DEFAULT_GITHUB_CSV_CONFIG.path).trim(),
+    };
+  }
+
+  function getSavedGithubToken() {
+    try {
+      return window.sessionStorage.getItem(GITHUB_TOKEN_STORAGE_KEY) || "";
+    } catch (error) {
+      return "";
+    }
+  }
+
+  function saveGithubToken(token) {
+    try {
+      window.sessionStorage.setItem(GITHUB_TOKEN_STORAGE_KEY, token);
+    } catch (error) {
+      console.warn("Could not persist GitHub token in session storage.", error);
+    }
+  }
+
+  function clearSavedGithubToken() {
+    try {
+      window.sessionStorage.removeItem(GITHUB_TOKEN_STORAGE_KEY);
+    } catch (error) {
+      console.warn("Could not clear GitHub token from session storage.", error);
+    }
+  }
+
+  function encodeBase64Utf8(value) {
+    var bytes = new TextEncoder().encode(String(value || ""));
+    var chunkSize = 32768;
+    var binary = "";
+
+    for (var index = 0; index < bytes.length; index += chunkSize) {
+      var chunk = bytes.subarray(index, index + chunkSize);
+      binary += String.fromCharCode.apply(null, chunk);
+    }
+
+    return btoa(binary);
+  }
+
+  async function fetchGithubCsvMeta(token) {
+    var config = getGithubCsvConfig();
+    var url = "https://api.github.com/repos/" + encodeURIComponent(config.owner) + "/" + encodeURIComponent(config.repo) + "/contents/" + config.path.split("/").map(encodeURIComponent).join("/") + "?ref=" + encodeURIComponent(config.branch);
+    var headers = {
+      "Accept": "application/vnd.github+json",
+    };
+
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
+
+    var response = await request(url, { headers: headers });
+    return readResponsePayload(response);
+  }
+
+  async function saveGithubCsv(content, token) {
+    var config = getGithubCsvConfig();
+    var current = await fetchGithubCsvMeta(token);
+    var url = "https://api.github.com/repos/" + encodeURIComponent(config.owner) + "/" + encodeURIComponent(config.repo) + "/contents/" + config.path.split("/").map(encodeURIComponent).join("/");
+    var payload = {
+      message: "Update print color options CSV",
+      content: encodeBase64Utf8(content),
+      branch: config.branch,
+      sha: current && current.sha ? current.sha : undefined,
+    };
+
+    var response = await request(url, {
+      method: "PUT",
+      headers: {
+        "Accept": "application/vnd.github+json",
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    return readResponsePayload(response);
   }
 
   function setBusy(button, busy, busyLabel) {
@@ -642,6 +737,9 @@
     var csvStatus = byId("adminCsvStatus");
     var csvReloadButton = byId("adminCsvReloadButton");
     var csvSaveButton = byId("adminCsvSaveButton");
+    var csvGithubForm = byId("adminCsvGithubForm");
+    var csvGithubTokenInput = byId("adminCsvGithubToken");
+    var csvGithubRememberButton = byId("adminCsvGithubRememberButton");
     var aiUsageCard = byId("adminAiUsageCard");
     var aiUsageList = byId("adminAiUsageList");
     var aiUsageStatus = byId("adminAiUsageStatus");
@@ -653,20 +751,20 @@
     var currentPassword = getSavedPassword();
     var currentAiUsageDayKey = "";
 
-    if (!accessCard || !accessForm || !accessPassword || !accessStatus || !accessButton || !workspace || !workspaceStatus || !listEl || !refreshButton || !logoutButton || !uploadForm || !uploadInput || !uploadButton || !csvCard || !csvEditor || !csvStatus || !csvReloadButton || !csvSaveButton || !aiUsageCard || !aiUsageList || !aiUsageStatus || !aiUsageRefreshButton || !aiUsageResetForm || !aiUsageUserInput || !aiUsageResetButton) {
+    if (!accessCard || !accessForm || !accessPassword || !accessStatus || !accessButton || !workspace || !workspaceStatus || !listEl || !refreshButton || !logoutButton || !uploadForm || !uploadInput || !uploadButton || !csvCard || !csvEditor || !csvStatus || !csvReloadButton || !csvSaveButton || !csvGithubForm || !csvGithubTokenInput || !csvGithubRememberButton || !aiUsageCard || !aiUsageList || !aiUsageStatus || !aiUsageRefreshButton || !aiUsageResetForm || !aiUsageUserInput || !aiUsageResetButton) {
       return;
     }
+
+    csvGithubTokenInput.value = getSavedGithubToken();
 
     function showWorkspace() {
       accessCard.classList.add("admin-hidden");
       workspace.classList.remove("admin-hidden");
-      csvCard.classList.remove("admin-hidden");
       aiUsageCard.classList.remove("admin-hidden");
     }
 
     function showGate() {
       workspace.classList.add("admin-hidden");
-      csvCard.classList.add("admin-hidden");
       aiUsageCard.classList.add("admin-hidden");
       accessCard.classList.remove("admin-hidden");
       accessPassword.value = "";
@@ -696,22 +794,14 @@
 
     async function loadCsv() {
       setBusy(csvReloadButton, true, "Loading...");
-      setStatus(csvStatus, "Loading print color options CSV from assets...");
+      setStatus(csvStatus, "Loading print color options CSV from GitHub...");
 
       try {
-        // If admin previously saved a local override, prefer that so admin sees what's currently in use
-        let text = null;
-        try { text = localStorage.getItem('printColorOptionsCsv'); } catch (e) { text = null; }
-        if (text) {
-          csvEditor.value = text;
-          setStatus(csvStatus, 'CSV loaded from local admin preview.');
-        } else {
-          const res = await fetch('assets/data/print-color-options.csv', { cache: 'no-cache' });
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-          const fetched = await res.text();
-          csvEditor.value = fetched || "";
-          setStatus(csvStatus, "CSV loaded from assets/data/print-color-options.csv.");
-        }
+        const res = await fetch('assets/data/print-color-options.csv', { cache: 'no-cache' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const fetched = await res.text();
+        csvEditor.value = fetched || "";
+        setStatus(csvStatus, "CSV loaded from assets/data/print-color-options.csv.");
       } catch (error) {
         console.error("Failed to load print color options CSV from assets", error);
         setStatus(csvStatus, "Could not load CSV. Check file path or hosting.");
@@ -752,7 +842,6 @@
         clearSavedPassword();
         currentPassword = "";
         listEl.innerHTML = "";
-        csvEditor.value = "";
         aiUsageList.innerHTML = "";
         aiUsageUserInput.value = "";
         showGate();
@@ -885,22 +974,40 @@
 
     async function handleSaveCsv() {
       setBusy(csvSaveButton, true, "Saving...");
-      setStatus(csvStatus, "Saving CSV...");
+      setStatus(csvStatus, "Saving CSV to GitHub...");
 
       const content = String(csvEditor.value || "");
+      const token = String(csvGithubTokenInput.value || "").trim();
+
+      if (!token) {
+        setBusy(csvSaveButton, false, "Saving...");
+        setStatus(csvStatus, "Enter a GitHub token with Contents read/write access first.");
+        return;
+      }
+
       try {
-        localStorage.setItem('printColorOptionsCsv', content);
-        const bc = new BroadcastChannel('print-color-options');
-        bc.postMessage({ type: 'update', content });
-        bc.close();
-        setStatus(csvStatus, 'Local preview updated. The 3D printing page will reflect this immediately in open tabs.');
+        await saveGithubCsv(content, token);
+        saveGithubToken(token);
+        setStatus(csvStatus, 'CSV committed to GitHub. GitHub Pages should publish the new material list shortly.');
         await loadCsv();
       } catch (error) {
-        console.error('Failed to set local CSV override', error);
-        setStatus(csvStatus, getErrorMessage(error, 'Could not update local preview.'));
+        console.error('Failed to save CSV to GitHub', error);
+        setStatus(csvStatus, getErrorMessage(error, 'Could not save CSV to GitHub.'));
       } finally {
         setBusy(csvSaveButton, false, 'Saving...');
       }
+    }
+
+    function handleRememberGithubToken() {
+      var token = String(csvGithubTokenInput.value || "").trim();
+      if (!token) {
+        clearSavedGithubToken();
+        setStatus(csvStatus, "Cleared the saved GitHub token from this browser session.");
+        return;
+      }
+
+      saveGithubToken(token);
+      setStatus(csvStatus, "GitHub token saved in this browser session.");
     }
 
     async function handleResetAiUsage(user, button) {
@@ -960,22 +1067,27 @@
     uploadForm.addEventListener("submit", handleUpload);
     csvReloadButton.addEventListener("click", loadCsv);
     csvSaveButton.addEventListener("click", handleSaveCsv);
+    csvGithubForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      handleRememberGithubToken();
+    });
+    csvGithubRememberButton.addEventListener("click", handleRememberGithubToken);
     aiUsageRefreshButton.addEventListener("click", loadAiUsage);
     aiUsageResetForm.addEventListener("submit", handleResetAiUsageForm);
     logoutButton.addEventListener("click", function () {
       clearSavedPassword();
       currentPassword = "";
       listEl.innerHTML = "";
-      csvEditor.value = "";
       aiUsageList.innerHTML = "";
       aiUsageUserInput.value = "";
       currentAiUsageDayKey = "";
-      setStatus(csvStatus, "");
       setStatus(aiUsageStatus, "");
       setStatus(workspaceStatus, "");
       showGate();
       setStatus(accessStatus, "Submission control locked.");
     });
+
+    loadCsv();
 
     if (currentPassword) {
       loadFiles();

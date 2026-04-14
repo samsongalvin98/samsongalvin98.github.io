@@ -350,18 +350,23 @@
             <div id="adminFileList" class="admin-list"></div>
         </section>
 
-        <section id="adminCsvCard" class="admin-card admin-hidden">
+        <section id="adminCsvCard" class="admin-card">
             <div class="admin-actions">
                 <div>
                     <h3>Print Color Options CSV</h3>
-                    <p>Update the material and color options used by the 3D printing page. Keep the first line as Material,Common colors.</p>
+                    <p>Update the material and color options used by the 3D printing page. This saves directly to the GitHub repo at assets/data/print-color-options.csv. Keep the first line as Material,Common colors.</p>
                 </div>
                 <div class="admin-toolbar">
                     <button id="adminCsvReloadButton" class="admin-button admin-secondary" type="button">Reload CSV</button>
-                    <button id="adminCsvSaveButton" class="admin-button" type="button">Save CSV</button>
+                    <button id="adminCsvSaveButton" class="admin-button" type="button">Save To GitHub</button>
                 </div>
             </div>
-                        <textarea id="adminCsvEditor" class="admin-textarea" spellcheck="false"></textarea>
+            <form id="adminCsvGithubForm" class="admin-auth-form">
+                <input id="adminCsvGithubToken" type="password" placeholder="GitHub fine-grained token with Contents: Read and Write" autocomplete="off">
+                <button id="adminCsvGithubRememberButton" class="admin-button admin-secondary" type="button">Remember In Session</button>
+            </form>
+            <p>Use a fine-grained personal access token for samsongalvin98.github.io with Contents read/write access. GitHub Pages may take a minute or two to publish the updated CSV.</p>
+            <textarea id="adminCsvEditor" class="admin-textarea" spellcheck="false"></textarea>
             <div id="adminCsvStatus" class="admin-status" aria-live="polite"></div>
         </section>
 
