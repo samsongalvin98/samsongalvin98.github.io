@@ -74,12 +74,21 @@ def build_quote_service_error(exc: Exception) -> Dict[str, Any]:
     lowered_message = message.lower()
     status_code = getattr(exc, "status_code", None)
 
-    if status_code == 403 and "reported as leaked" in lowered_message:
+    if "reported as leaked" in lowered_message or "please use another api key" in lowered_message:
         return {
             "text": "AI quote service is unavailable because the configured Gemini API key was revoked by Google after being reported as leaked. Replace GEMINI_API_KEY with a new key and restart the backend.",
             "usage": {
                 "aiUnavailable": True,
                 "reason": "gemini_api_key_revoked",
+            },
+        }
+
+    if status_code == 403:
+        return {
+            "text": "AI quote service is unavailable because the Gemini request was rejected. Check the configured API key, model access, and project permissions, then restart the backend.",
+            "usage": {
+                "aiUnavailable": True,
+                "reason": "gemini_permission_denied",
             },
         }
 
