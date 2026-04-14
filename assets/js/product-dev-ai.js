@@ -112,10 +112,19 @@
       : null;
     const todayTotalTokens = typeof usage.todayTotalTokens === "number" ? usage.todayTotalTokens : null;
     const remainingTokens = typeof usage.remainingTokens === "number" ? usage.remainingTokens : null;
+    const aiUnavailable = !!usage.aiUnavailable;
+    const unavailableReason = String(usage.reason || "");
     const adminOverrideUsed = !!usage.adminOverrideUsed;
     const adminResetUsed = !!usage.adminResetUsed;
     const limitReached = !!usage.limitReached;
     const adminOverrideAvailable = !!usage.adminOverrideAvailable;
+
+    if (aiUnavailable) {
+      if (unavailableReason === "gemini_api_key_revoked") {
+        return "AI quote service unavailable: Gemini API key was revoked and must be replaced on the backend.";
+      }
+      return "AI quote service is temporarily unavailable.";
+    }
 
     const parts = [];
     if (typeof requestTokens === "number") parts.push("Request tokens: " + requestTokens);
@@ -131,9 +140,10 @@
   function isLimitReachedResponse(result) {
     if (!result) return false;
     if (result.usage && result.usage.limitReached) return true;
+    if (result.usage && result.usage.aiUnavailable) return false;
 
     var text = String(result.text || "").toLowerCase();
-    return text.indexOf("daily ai limit reached") !== -1 || text.indexOf("try again later") !== -1;
+    return text.indexOf("daily ai limit reached") !== -1;
   }
 
   document.addEventListener("DOMContentLoaded", function () {

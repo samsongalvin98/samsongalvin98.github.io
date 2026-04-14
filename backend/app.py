@@ -25,7 +25,7 @@ SUCCESS_REDIRECT_URL = os.environ.get("SUCCESS_REDIRECT_URL", "").strip()
 SUBMISSIONS_ADMIN_PASSWORD = os.environ.get("SUBMISSIONS_ADMIN_PASSWORD", "").strip()
 PRINT_COLOR_OPTIONS_PATH = ROOT_DIR.parent / "assets" / "data" / "print-color-options.csv"
 AI_USAGE_LOG_PATH = Path(os.environ.get("AI_USAGE_LOG_PATH", ROOT_DIR / "ai_usage.json"))
-AI_DAILY_TOKEN_LIMIT = max(0, int(os.environ.get("AI_DAILY_TOKEN_LIMIT", "25000") or "0"))
+AI_DAILY_TOKEN_LIMIT = max(0, int(os.environ.get("AI_DAILY_TOKEN_LIMIT", "0") or "0"))
 
 allowed_origins = os.environ.get("BACKEND_CORS_ORIGINS", "*").split(",")
 allowed_origins = [origin.strip() for origin in allowed_origins if origin.strip()]
@@ -67,6 +67,29 @@ class CsvUpdateRequest(BaseModel):
 class AiUsageResetRequest(BaseModel):
     user: str
     dayKey: Optional[str] = None
+
+
+def build_quote_service_error(exc: Exception) -> Dict[str, Any]:
+    message = str(exc or "").strip()
+    lowered_message = message.lower()
+    status_code = getattr(exc, "status_code", None)
+
+    if status_code == 403 and "reported as leaked" in lowered_message:
+        return {
+            "text": "AI quote service is unavailable because the configured Gemini API key was revoked by Google after being reported as leaked. Replace GEMINI_API_KEY with a new key and restart the backend.",
+            "usage": {
+                "aiUnavailable": True,
+                "reason": "gemini_api_key_revoked",
+            },
+        }
+
+    return {
+        "text": "AI quote service is temporarily unavailable. Please try again later.",
+        "usage": {
+            "aiUnavailable": True,
+            "reason": "gemini_request_failed",
+        },
+    }
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
@@ -1001,7 +1024,11 @@ def api_quote(req: QuoteRequest, request: Request) -> Dict[str, Any]:
             },
         }
 
-    resp = client.models.generate_content(model=model, contents=transcript_text)
+    try:
+        resp = client.models.generate_content(model=model, contents=transcript_text)
+    except Exception as exc:
+        return build_quote_service_error(exc)
+
     response_text = sanitize_quote_response(
         getattr(resp, "text", None) or "I couldn’t generate a quote right now. Please try again."
     )
