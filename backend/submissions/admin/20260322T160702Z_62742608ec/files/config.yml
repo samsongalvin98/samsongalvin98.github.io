@@ -1,7 +1,0 @@
-tunnel: e1020d0d-7c1f-45b2-9e1b-a630ade2e2a9
-credentials-file: C:\Users\samso\.cloudflared\e1020d0d-7c1f-45b2-9e1b-a630ade2e2a9.json
-
-ingress:
-  - hostname: api.samsongalvin.com
-    service: http://localhost:8788
-  - service: http_status:404
