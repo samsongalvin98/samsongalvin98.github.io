@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex,nofollow,noarchive" />
+  <title>Rome Trip Cost Splitter</title>
+  <style>
+    :root {
+      --bg: #f7f3ed;
+      --card: #ffffff;
+      --ink: #252525;
+      --muted: #6b7280;
+      --accent: #9b2f22;
+      --accent-2: #d7a86e;
+      --line: #e5e0d8;
+      --green: #0f766e;
+      --red: #b91c1c;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(135deg, #f7f3ed, #efe2cf);
+      color: var(--ink);
+      padding: 28px;
+    }
+
+    .wrap { max-width: 1100px; margin: 0 auto; }
+
+    header {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 26px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.07);
+      margin-bottom: 20px;
+    }
+
+    h1 { margin: 0 0 8px; font-size: 34px; color: var(--accent); }
+    p { margin: 0; color: var(--muted); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.055);
+    }
+
+    h2 { margin: 0 0 14px; font-size: 20px; }
+
+    .form {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      align-items: end;
+      margin-bottom: 16px;
+    }
+
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+    input, select, button {
+      width: 100%;
+      padding: 10px 11px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      font-size: 14px;
+      background: white;
+    }
+
+    .span2 { grid-column: span 2; }
+
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    button:hover { filter: brightness(0.95); }
+    .secondary { background: #374151; }
+    .danger { background: #991b1b; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    th { background: #faf7f2; color: #4b5563; }
+    tr:last-child td { border-bottom: none; }
+
+    .money { text-align: right; white-space: nowrap; }
+    .positive { color: var(--green); font-weight: 700; }
+    .negative { color: var(--red); font-weight: 700; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .stat {
+      border: 1px solid var(--line);
+      background: #faf7f2;
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .stat .label { color: var(--muted); font-size: 12px; }
+    .stat .value { font-size: 24px; font-weight: 800; margin-top: 4px; }
+
+    .small-btn {
+      width: auto;
+      padding: 6px 9px;
+      font-size: 12px;
+      border-radius: 8px;
+    }
+
+    .person-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .import-box {
+      margin-top: 14px;
+      padding: 12px;
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+      background: #faf7f2;
+    }
+
+    .import-box p {
+      margin: 0 0 10px;
+      font-size: 13px;
+    }
+
+    .import-actions {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .sync-status {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--muted);
+      min-height: 1.4em;
+    }
+
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+      .form { grid-template-columns: 1fr 1fr; }
+      .span2 { grid-column: span 2; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Rome Trip Cost Splitter</h1>
+      <p>Enter expenses, select who paid, and the totals update automatically for Hannah, Jay, Matt, and Samson.</p>
+      <div id="syncStatus" class="sync-status" aria-live="polite">Loading shared trip data...</div>
+    </header>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Add Expense</h2>
+        <div class="form">
+          <div>
+            <label>Date</label>
+            <input id="date" type="date" />
+          </div>
+          <div class="span2">
+            <label>Description</label>
+            <input id="desc" type="text" placeholder="Dinner, Airbnb, train..." />
+          </div>
+          <div>
+            <label>Category</label>
+            <select id="category">
+              <option>Food</option>
+              <option>Lodging</option>
+              <option>Transport</option>
+              <option>Activity</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div>
+            <label>Paid By</label>
+            <select id="paidBy"></select>
+          </div>
+          <div>
+            <label>Amount</label>
+            <input id="amount" type="number" min="0" step="0.01" placeholder="0.00" />
+          </div>
+          <div>
+            <button onclick="addExpense()">Add</button>
+          </div>
+        </div>
+
+        <h2>Expenses</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Category</th>
+              <th>Paid By</th>
+              <th class="money">Amount</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="expenseRows"></tbody>
+        </table>
+      </section>
+
+      <aside>
+        <section class="card" style="margin-bottom:20px;">
+          <h2>Trip Summary</h2>
+          <div class="stats">
+            <div class="stat">
+              <div class="label">Total Trip Cost</div>
+              <div class="value" id="totalCost">$0.00</div>
+            </div>
+            <div class="stat">
+              <div class="label">Equal Share</div>
+              <div class="value" id="equalShare">$0.00</div>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Person</th>
+                <th class="money">Paid</th>
+                <th class="money">Balance</th>
+              </tr>
+            </thead>
+            <tbody id="summaryRows"></tbody>
+          </table>
+        </section>
+
+        <section class="card" style="margin-bottom:20px;">
+          <h2>Who Pays Who</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>From</th>
+                <th>To</th>
+                <th class="money">Amount</th>
+              </tr>
+            </thead>
+            <tbody id="settlementRows"></tbody>
+          </table>
+        </section>
+
+        <section class="card">
+          <h2>People</h2>
+          <div id="peopleList"></div>
+          <div class="person-row">
+            <input id="newPerson" type="text" placeholder="Add person" />
+            <button class="small-btn secondary" onclick="addPerson()">Add</button>
+          </div>
+          <div class="import-box">
+            <p>Load a CSV with the columns Date, Description, Category, Paid By, and Amount.</p>
+            <div class="import-actions">
+              <input id="csvFile" type="file" accept=".csv,text/csv" />
+              <button class="small-btn secondary" onclick="importCSV()">Import CSV</button>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="secondary" onclick="exportCSV()">Export CSV</button>
+            <button class="danger" onclick="resetAll()">Reset</button>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <script src="assets/js/lab-form-endpoints.js"></script>
+  <script>
+    const DEFAULT_PEOPLE = ['Hannah', 'Jay', 'Matt', 'Samson'];
+    const PEOPLE_STORAGE_KEY = 'romePeople';
+    const EXPENSES_STORAGE_KEY = 'romeExpenses';
+    const syncStatus = document.getElementById('syncStatus');
+
+    let people = JSON.parse(localStorage.getItem(PEOPLE_STORAGE_KEY)) || [...DEFAULT_PEOPLE];
+    let expenses = JSON.parse(localStorage.getItem(EXPENSES_STORAGE_KEY)) || [];
+    let saveInFlight = false;
+    let saveQueued = false;
+
+    const money = value => value.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+
+    function setStatus(message) {
+      syncStatus.textContent = message;
+    }
+
+    function getBaseUrl() {
+      const explicit = typeof window.LAB_FORM_BASE_URL === 'string' ? window.LAB_FORM_BASE_URL.trim() : '';
+      if (explicit) {
+        return explicit.replace(/\/$/, '');
+      }
+
+      const { protocol, hostname } = window.location;
+      if (protocol === 'file:') {
+        return '';
+      }
+
+      if (hostname === 'samsongalvin.com' || hostname === 'www.samsongalvin.com') {
+        return 'https://api.samsongalvin.com';
+      }
+
+      if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return 'http://127.0.0.1:8000';
+      }
+
+      return '';
+    }
+
+    function getApiUrl() {
+      const baseUrl = getBaseUrl();
+      return baseUrl ? `${baseUrl}/api/rome-trip` : '';
+    }
+
+    function saveLocalState() {
+      localStorage.setItem(PEOPLE_STORAGE_KEY, JSON.stringify(people));
+      localStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(expenses));
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function normalizeState(payload) {
+      const fallback = {
+        people: [...DEFAULT_PEOPLE],
+        expenses: []
+      };
+
+      if (!payload || typeof payload !== 'object') {
+        return fallback;
+      }
+
+      const sourcePeople = Array.isArray(payload.people) ? payload.people : fallback.people;
+      const dedupedPeople = [];
+
+      sourcePeople.forEach(person => {
+        const name = String(person || '').trim();
+        if (!name || dedupedPeople.includes(name)) return;
+        dedupedPeople.push(name);
+      });
+
+      const resolvedPeople = dedupedPeople.length ? dedupedPeople : [...DEFAULT_PEOPLE];
+      const allowedPeople = new Set(resolvedPeople);
+      const sourceExpenses = Array.isArray(payload.expenses) ? payload.expenses : [];
+
+      const normalizedExpenses = sourceExpenses.reduce((rows, entry) => {
+        if (!entry || typeof entry !== 'object') return rows;
+
+        const desc = String(entry.desc || '').trim();
+        const paidBy = String(entry.paidBy || '').trim();
+        const category = String(entry.category || 'Other').trim() || 'Other';
+        const date = String(entry.date || '').trim();
+        const amount = Number(entry.amount);
+
+        if (!desc || !paidBy || !allowedPeople.has(paidBy) || !Number.isFinite(amount) || amount <= 0) {
+          return rows;
+        }
+
+        rows.push({
+          date,
+          desc,
+          category,
+          paidBy,
+          amount
+        });
+        return rows;
+      }, []);
+
+      return {
+        people: resolvedPeople,
+        expenses: normalizedExpenses
+      };
+    }
+
+    async function loadSharedState() {
+      const apiUrl = getApiUrl();
+      if (!apiUrl) {
+        setStatus('Shared sync is disabled here. Using this browser only.');
+        render();
+        return;
+      }
+
+      try {
+        const response = await fetch(apiUrl, { cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error(`Request failed with ${response.status}`);
+        }
+
+        const payload = normalizeState(await response.json());
+        people = payload.people;
+        expenses = payload.expenses;
+        saveLocalState();
+        setStatus('Shared trip data loaded. Changes save for everyone with the hidden link.');
+      } catch (error) {
+        setStatus('Could not reach the shared trip service. Using saved data from this browser only.');
+      }
+
+      render();
+    }
+
+    async function persistState() {
+      saveLocalState();
+
+      const apiUrl = getApiUrl();
+      if (!apiUrl) {
+        setStatus('Saved in this browser only. Shared sync is not configured here.');
+        return;
+      }
+
+      if (saveInFlight) {
+        saveQueued = true;
+        return;
+      }
+
+      saveInFlight = true;
+      setStatus('Saving shared trip data...');
+
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ people, expenses })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Request failed with ${response.status}`);
+        }
+
+        const payload = await response.json();
+        const normalized = normalizeState(payload && payload.data ? payload.data : payload);
+        people = normalized.people;
+        expenses = normalized.expenses;
+        saveLocalState();
+        setStatus('Shared trip data saved.');
+      } catch (error) {
+        setStatus('Shared save failed. Your latest changes are still saved in this browser.');
+      } finally {
+        saveInFlight = false;
+        if (saveQueued) {
+          saveQueued = false;
+          persistState();
+        }
+      }
+    }
+
+    function save() {
+      render();
+      persistState();
+    }
+
+    function renderPeople() {
+      const paidBy = document.getElementById('paidBy');
+      paidBy.innerHTML = people.map(p => `<option>${escapeHtml(p)}</option>`).join('');
+
+      document.getElementById('peopleList').innerHTML = people.map((p, i) => `
+        <div class="person-row">
+          <input value="${escapeHtml(p)}" onchange="renamePerson(${i}, this.value)" />
+          <button class="small-btn danger" onclick="removePerson(${i})">Remove</button>
+        </div>
+      `).join('');
+    }
+
+    function addPerson() {
+      const input = document.getElementById('newPerson');
+      const name = input.value.trim();
+      if (!name || people.includes(name)) return;
+      people.push(name);
+      input.value = '';
+      save();
+    }
+
+    function renamePerson(index, newName) {
+      newName = newName.trim();
+      if (!newName) return render();
+      if (people.some((person, personIndex) => personIndex !== index && person === newName)) return render();
+      const oldName = people[index];
+      people[index] = newName;
+      expenses.forEach(e => { if (e.paidBy === oldName) e.paidBy = newName; });
+      save();
+    }
+
+    function removePerson(index) {
+      if (people.length <= 1) return alert('You need at least one person.');
+      const name = people[index];
+      if (expenses.some(e => e.paidBy === name)) {
+        alert('Remove or reassign expenses paid by this person first.');
+        return;
+      }
+      people.splice(index, 1);
+      save();
+    }
+
+    function addExpense() {
+      const date = document.getElementById('date').value;
+      const desc = document.getElementById('desc').value.trim();
+      const category = document.getElementById('category').value;
+      const paidBy = document.getElementById('paidBy').value;
+      const amount = Number(document.getElementById('amount').value);
+
+      if (!desc || !paidBy || !amount || amount <= 0) {
+        alert('Please enter a description, paid by, and valid amount.');
+        return;
+      }
+
+      expenses.push({ date, desc, category, paidBy, amount });
+      document.getElementById('desc').value = '';
+      document.getElementById('amount').value = '';
+      save();
+    }
+
+    function deleteExpense(index) {
+      expenses.splice(index, 1);
+      save();
+    }
+
+    function parseCSV(text) {
+      const rows = [];
+      let row = [];
+      let value = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const next = text[i + 1];
+
+        if (char === '"') {
+          if (inQuotes && next === '"') {
+            value += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          row.push(value);
+          value = '';
+        } else if ((char === '\n' || char === '\r') && !inQuotes) {
+          if (char === '\r' && next === '\n') i++;
+          row.push(value);
+          if (row.some(cell => cell.trim() !== '')) rows.push(row);
+          row = [];
+          value = '';
+        } else {
+          value += char;
+        }
+      }
+
+      if (value.length || row.length) {
+        row.push(value);
+        if (row.some(cell => cell.trim() !== '')) rows.push(row);
+      }
+
+      return rows.map(cols => cols.map(cell => cell.trim()));
+    }
+
+    function normalizeHeader(value) {
+      return value.trim().toLowerCase().replace(/\s+/g, ' ');
+    }
+
+    function importCSV() {
+      const fileInput = document.getElementById('csvFile');
+      const [file] = fileInput.files;
+
+      if (!file) {
+        alert('Choose a CSV file first.');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const rows = parseCSV(String(reader.result || ''));
+          if (rows.length < 2) throw new Error('The file does not contain any expense rows.');
+
+          const headers = rows[0].map(normalizeHeader);
+          const requiredHeaders = ['date', 'description', 'category', 'paid by', 'amount'];
+          const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
+          if (missingHeaders.length) {
+            throw new Error(`Missing required columns: ${missingHeaders.join(', ')}`);
+          }
+
+          const headerIndex = Object.fromEntries(headers.map((header, index) => [header, index]));
+          const importedExpenses = rows.slice(1).map((cols, index) => {
+            const amount = Number(cols[headerIndex['amount']]);
+            const paidBy = (cols[headerIndex['paid by']] || '').trim();
+            const desc = (cols[headerIndex['description']] || '').trim();
+
+            if (!desc || !paidBy || !Number.isFinite(amount) || amount <= 0) {
+              throw new Error(`Row ${index + 2} has invalid description, payer, or amount.`);
+            }
+
+            return {
+              date: (cols[headerIndex['date']] || '').trim(),
+              desc,
+              category: (cols[headerIndex['category']] || 'Other').trim() || 'Other',
+              paidBy,
+              amount
+            };
+          });
+
+          const importedPeople = importedExpenses.map(expense => expense.paidBy);
+          people = [...new Set([...people, ...importedPeople])];
+          expenses = importedExpenses;
+          fileInput.value = '';
+          save();
+        } catch (error) {
+          alert(error.message || 'Unable to import CSV.');
+        }
+      };
+
+      reader.onerror = () => {
+        alert('Unable to read the selected file.');
+      };
+
+      reader.readAsText(file);
+    }
+
+    function calculateBalances() {
+      const total = expenses.reduce((sum, e) => sum + e.amount, 0);
+      const share = people.length ? total / people.length : 0;
+      const paid = Object.fromEntries(people.map(p => [p, 0]));
+      expenses.forEach(e => { if (paid[e.paidBy] !== undefined) paid[e.paidBy] += e.amount; });
+      const balances = people.map(p => ({ name: p, paid: paid[p], balance: paid[p] - share }));
+      return { total, share, balances };
+    }
+
+    function calculateSettlements(balances) {
+      const debtors = balances.filter(b => b.balance < -0.005).map(b => ({ name: b.name, amount: -b.balance }));
+      const creditors = balances.filter(b => b.balance > 0.005).map(b => ({ name: b.name, amount: b.balance }));
+      const payments = [];
+      let i = 0, j = 0;
+
+      while (i < debtors.length && j < creditors.length) {
+        const amount = Math.min(debtors[i].amount, creditors[j].amount);
+        payments.push({ from: debtors[i].name, to: creditors[j].name, amount });
+        debtors[i].amount -= amount;
+        creditors[j].amount -= amount;
+        if (debtors[i].amount < 0.005) i++;
+        if (creditors[j].amount < 0.005) j++;
+      }
+      return payments;
+    }
+
+    function render() {
+      renderPeople();
+      const { total, share, balances } = calculateBalances();
+      document.getElementById('totalCost').textContent = money(total);
+      document.getElementById('equalShare').textContent = money(share);
+
+      document.getElementById('expenseRows').innerHTML = expenses.length ? expenses.map((e, i) => `
+        <tr>
+          <td>${escapeHtml(e.date || '-')}</td>
+          <td>${escapeHtml(e.desc)}</td>
+          <td>${escapeHtml(e.category)}</td>
+          <td>${escapeHtml(e.paidBy)}</td>
+          <td class="money">${money(e.amount)}</td>
+          <td><button class="small-btn danger" onclick="deleteExpense(${i})">Delete</button></td>
+        </tr>
+      `).join('') : `<tr><td colspan="6" style="color:#6b7280;">No expenses yet.</td></tr>`;
+
+      document.getElementById('summaryRows').innerHTML = balances.map(b => `
+        <tr>
+          <td>${escapeHtml(b.name)}</td>
+          <td class="money">${money(b.paid)}</td>
+          <td class="money ${b.balance >= 0 ? 'positive' : 'negative'}">${money(b.balance)}</td>
+        </tr>
+      `).join('');
+
+      const payments = calculateSettlements(balances);
+      document.getElementById('settlementRows').innerHTML = payments.length ? payments.map(p => `
+        <tr>
+          <td>${escapeHtml(p.from)}</td>
+          <td>${escapeHtml(p.to)}</td>
+          <td class="money">${money(p.amount)}</td>
+        </tr>
+      `).join('') : `<tr><td colspan="3" style="color:#6b7280;">All settled.</td></tr>`;
+    }
+
+    function exportCSV() {
+      const rows = [['Date','Description','Category','Paid By','Amount'], ...expenses.map(e => [e.date, e.desc, e.category, e.paidBy, e.amount])];
+      const csv = rows.map(r => r.map(v => `"${String(v).replaceAll('"', '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'rome_trip_expenses.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function resetAll() {
+      if (!confirm('Clear all expenses and reset people?')) return;
+      people = [...DEFAULT_PEOPLE];
+      expenses = [];
+      save();
+    }
+
+    loadSharedState();
+  </script>
+</body>
+</html>
