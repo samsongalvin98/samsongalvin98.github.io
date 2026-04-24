@@ -81,6 +81,13 @@
             cursor: pointer;
         }
 
+            .admin-link-button {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                text-decoration: none;
+            }
+
         .admin-button,
         .admin-download-action {
             background: #10b981;
@@ -268,6 +275,13 @@
             display: none;
         }
 
+        .admin-shortcuts {
+            margin-top: 18px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
         @media (max-width: 760px) {
             .admin-auth-form,
             .admin-upload-form {
@@ -327,6 +341,9 @@
                 <button id="adminAccessButton" class="admin-button" type="submit">Unlock</button>
             </form>
             <div id="adminAccessStatus" class="admin-status" aria-live="polite"></div>
+            <div class="admin-shortcuts">
+                <a class="admin-button admin-secondary admin-link-button" href="rome trip calculator.html">Open Rome Calculator</a>
+            </div>
         </section>
 
         <section id="adminWorkspace" class="admin-card admin-hidden">
@@ -336,6 +353,7 @@
                     <p>Each submission folder is listed first, with its metadata.json and uploaded files nested underneath.</p>
                 </div>
                 <div class="admin-toolbar">
+                    <a class="admin-button admin-secondary admin-link-button" href="rome trip calculator.html">Rome Calculator</a>
                     <button id="adminRefreshButton" class="admin-button admin-secondary" type="button">Refresh</button>
                     <button id="adminLogoutButton" class="admin-button admin-secondary" type="button">Lock</button>
                 </div>
